@@ -34,7 +34,20 @@ INSTALLED_APPS = [
     # Local apps
     'accounts.apps.AccountsConfig',
     'sites.apps.SitesConfig',
+    
+    # ماژول هوش مصنوعی
+    'ai_providers.apps.AiProvidersConfig',
+
+    # ماژول تحقیق کلمات کلیدی
+    'keyword_research.apps.KeywordResearchConfig',
+
+    # اضافه شدن اپ ماژول تولید محتوا و رسانه
+    'content_generation.apps.ContentGenerationConfig',
+    
+    'core.apps.CoreConfig',
 ]
+
+FERNET_KEY = env('FERNET_KEY', default='')
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -77,6 +90,22 @@ DATABASES = {
     'default': env.db(default=f"postgres://{env('DB_USER')}:{env('DB_PASSWORD')}@{env('DB_HOST')}:{env('DB_PORT')}/{env('DB_NAME')}")
 }
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
 # استفاده از Argon2 برای هش پسوردها طبق الزامات امنیتی شما
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
@@ -101,3 +130,11 @@ CELERY_RESULT_BACKEND = env('REDIS_URL')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+# تنظیمات امنیتی کوکی‌ها و سشن‌ها برای مسدودسازی حملات XSS و CSRF
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True

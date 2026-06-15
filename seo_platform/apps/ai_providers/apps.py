@@ -1,6 +1,6 @@
-# apps/sites/apps.py
+# apps/ai_providers/apps.py
 from django.apps import AppConfig
 
-class SitesConfig(AppConfig):
+class AiProvidersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'sites'
+    name = 'ai_providers'

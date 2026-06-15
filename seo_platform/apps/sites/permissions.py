@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from apps.sites.models import SiteMembership
+from sites.models import SiteMembership
 
 class IsSiteMember(permissions.BasePermission):
     """
@@ -16,7 +16,7 @@ class IsSiteMember(permissions.BasePermission):
             return True
             
         # تشخیص مدل آبجکت (خود سایت یا مدل‌های متصل به سایت)
-        from apps.sites.models import Site
+        from sites.models import Site
         site = obj if isinstance(obj, Site) else getattr(obj, 'site', None)
         
         if not site:

@@ -22,6 +22,21 @@ class Site(models.Model):
     def __str__(self):
         return self.name
 
+    # کدهای قبلی مدل Site ...
+    def save(self, *auto_id, **kwargs):
+        # بررسی اینکه اگر پسورد رمزنگاری نشده، آن را رمزنگاری کند
+        if self.wp_app_password and not self.wp_app_password.startswith('gAAAAA'):
+            from core.utils.encryption import EncryptedFieldHelper
+            self.wp_app_password = EncryptedFieldHelper.encrypt(self.wp_app_password)
+        super().save(*auto_id, **kwargs)
+
+    @property
+    def decrypted_password(self):
+        from core.utils.encryption import EncryptedFieldHelper
+        if self.wp_app_password and self.wp_app_password.startswith('gAAAAA'):
+            return EncryptedFieldHelper.decrypt(self.wp_app_password)
+        return self.wp_app_password
+
 class SiteMembership(models.Model):
     ROLE_CHOICES = [
         ('owner', 'Owner'),
@@ -37,3 +52,4 @@ class SiteMembership(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.site.name} ({self.role})"
+
