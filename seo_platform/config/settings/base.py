@@ -26,12 +26,37 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Third-party apps
+    
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     
-    # Local apps (در گام‌های بعدی اضافه می‌شوند)
+    # Local apps
+    'accounts.apps.AccountsConfig',
+    'sites.apps.SitesConfig',
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
+
+# تنظیمات پیش‌فرض REST Framework و احراز هویت JWT
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+# کانفیگ زمان انقضای توکن‌ها طبق نیازمندی‌های شما
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

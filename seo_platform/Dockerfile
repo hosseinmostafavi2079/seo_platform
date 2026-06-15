@@ -23,8 +23,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/home/appuser/.local/bin:${PATH}"
 
+# تغییر پکیج از libpq-5 به libpq5 برای سازگاری با دبیان
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-5 \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m appuser
 
