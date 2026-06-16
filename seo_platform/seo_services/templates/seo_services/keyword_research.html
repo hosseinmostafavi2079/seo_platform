@@ -1,66 +1,298 @@
 {% extends 'seo_services/base.html' %}
 {% block content %}
-<header class="mb-10">
-    <h2 class="text-xl font-bold tracking-tight text-zinc-900">تحقیق کلمات کلیدی هوشمند (Topic Clusters)</h2>
-    <p class="text-zinc-400 text-xs mt-1">اسکرپ زنده ساختار هدینگ‌های رقبای رتبه اول گوگل و استخراج خودکار ۸۰ عنوان خوشه‌ای با هوش مصنوعی</p>
+<header class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+    <div>
+        <h2 class="text-xl font-bold tracking-tight text-zinc-900">بانک موضوعات و استراتژی محتوای سایت‌ها</h2>
+        <p class="text-zinc-400 text-xs mt-1 font-medium">مشاهده جداول کلمات کلیدی، تایید یا ویرایش موضوعات خوشه‌ای و افزودن عناوین سئو شده دستی</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <label class="text-xs font-bold text-zinc-500 whitespace-nowrap">جدول سایت:</label>
+        <select onchange="location.href='?site_id=' + this.value" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs font-bold focus:outline-none shadow-sm">
+            {% for site in sites %}
+                <option value="{{ site.id }}" {% if site.id == selected_site_id %}selected{% endif %}>{{ site.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
 </header>
 
-<div class="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm mb-8 max-w-5xl">
-    <form method="POST" class="space-y-5">
-        {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-                <label class="block text-[11px] font-bold text-zinc-600 mb-2">انتخاب دامنه پروژه مقصد</label>
-                <select name="site_id" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium">
-                    {% for site in sites %} <option value="{{ site.id }}">{{ site.name }} ({{ site.domain }})</option> {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold text-zinc-600 mb-2">کلمات کلیدی اصلی پایه (با کاما جدا کنید)</label>
-                <input type="text" name="core_keywords" required placeholder="مثال: لپ تاپ استوک، قیمت مانیتور ارگونومیک" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium">
-            </div>
+<div id="kw-progress-card" class="bg-zinc-950 text-white rounded-2xl p-5 mb-8 shadow-md hidden">
+    <div class="flex justify-between items-center mb-2">
+        <p class="text-xs font-bold flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+            <span id="kw-step-label">در حال راه‌اندازی فرآیند تحقیق...</span>
+        </p>
+        <span class="text-[11px] text-zinc-400 font-mono" id="kw-pct-label">0%</span>
+    </div>
+    <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+        <div id="kw-progress-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%;"></div>
+    </div>
+    <div id="kw-error-box" class="mt-3 p-2.5 bg-red-950 border border-red-900/50 rounded-xl text-[11px] text-red-300 font-medium hidden"></div>
+</div>
+
+<div class="bg-white rounded-2xl border border-zinc-100 p-4 shadow-sm mb-6 max-w-5xl">
+    <form method="GET" class="grid grid-cols-1 sm:grid-cols-5 gap-3 items-center">
+        <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+        <input type="hidden" name="sort" value="{{ sort_by }}">
+        
+        <div class="sm:col-span-2">
+            <input type="text" name="search" value="{{ search_query }}" placeholder="جستجو در عناوین و دسته‌بندی‌ها..." class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-                <label class="block text-[11px] font-bold text-zinc-600 mb-2">توضیحات بیزینس شما برای آموزش هوش مصنوعی</label>
-                <textarea name="business_desc" rows="2" placeholder="فروشگاه اینترنتی کامپیوتر سبحان رایانه با تمرکز بر قطعات استوک..." class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium"></textarea>
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold text-zinc-600 mb-2">آدرس سایت رقبا (با کاما جدا کنید)</label>
-                <textarea name="competitors" rows="2" placeholder="https://competitor1.com, https://competitor2.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium"></textarea>
-            </div>
+        <div>
+            <select name="intent" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
+                <option value="All" {% if intent_filter == 'All' %}selected{% endif %}>همه Intentها</option>
+                <option value="Informational" {% if intent_filter == 'Informational' %}selected{% endif %}>Informational</option>
+                <option value="Commercial" {% if intent_filter == 'Commercial' %}selected{% endif %}>Commercial</option>
+                <option value="Transactional" {% if intent_filter == 'Transactional' %}selected{% endif %}>Transactional</option>
+            </select>
         </div>
-        <div class="flex justify-end pt-1">
-            <button type="submit" class="px-5 py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition shadow-sm">⚡ شروع استخراج استراتژی و کلمات کلیدی رقبا</button>
+        <div>
+            <select name="status" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
+                <option value="All" {% if status_filter == 'All' %}selected{% endif %}>همه وضعیت‌ها</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>در انتظار تایید</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>تایید شده</option>
+                <option value="generated" {% if status_filter == 'generated' %}selected{% endif %}>مقاله تولید شده</option>
+            </select>
+        </div>
+        <div class="flex gap-2">
+            <select name="per_page" class="w-1/2 px-2 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>۱۰ تایی</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>۲۰ تایی</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>۵۰ تایی</option>
+            </select>
+            <button type="submit" class="w-1/2 py-1.5 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">فیلتر ⚡</button>
         </div>
     </form>
 </div>
 
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
+    <div class="bg-white rounded-2xl border border-zinc-100 p-5 shadow-sm space-y-4">
+        <h4 class="text-xs font-bold text-zinc-800 flex items-center gap-2"><span>🤖</span> استخراج هوشمند خوشه محتوایی</h4>
+        <form id="ai-research-form" onsubmit="startAiResearch(event)" class="space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="run_ai_research">
+            <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+            <input type="text" name="core_keywords" required placeholder="کلمات کلیدی اصلی (با کاما)" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[9px] font-bold text-zinc-400 mb-1">تعداد موضوعات:</label>
+                    <input type="number" name="topic_count" value="20" min="5" max="100" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold text-center focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-zinc-400 mb-1">فیلتر Intent پایه:</label>
+                    <select name="intent_filter" class="w-full px-2 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-[11px] font-bold focus:outline-none">
+                        <option value="All">شامل همه</option>
+                        <option value="Informational">Informational</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+                </div>
+            </div>
+            <textarea name="business_desc" rows="2" placeholder="توضیحات کوتاه بیزینس..." class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium"></textarea>
+            <textarea name="competitors" rows="2" placeholder="لینک رقبا (با کاما)..." class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium"></textarea>
+            <button type="submit" id="btn-research-submit" class="w-full py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">شروع تحقیق هوش مصنوعی</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-zinc-100 p-5 shadow-sm space-y-4 lg:col-span-2">
+        <h4 class="text-xs font-bold text-zinc-800 flex items-center gap-2"><span>🎯</span> افزودن دستی موضوع سئو شده</h4>
+        <form method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_manual_topic">
+            <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+            <div class="sm:col-span-2">
+                <input type="text" name="article_title" required placeholder="عنوان مقاله سئو شده و اصولی" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <div>
+                <input type="text" name="category_pillar" placeholder="دسته مادر (Pillar)" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <div class="sm:col-span-2">
+                <select name="intent" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
+                    <option value="Informational">اطلاعاتی (Informational)</option>
+                    <option value="Commercial">تجاری (Commercial)</option>
+                    <option value="Transactional">معاملاتی (Transactional)</option>
+                </select>
+            </div>
+            <button type="submit" class="py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">➕ ثبت در بانک سئو سایت</button>
+        </form>
+    </div>
+</div>
+
 <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden">
-    <div class="px-5 py-4 border-b border-zinc-50"><h4 class="font-bold text-xs text-zinc-900">بانک عناوین و خوشه‌های محتوایی استخراج شده</h4></div>
     <div class="overflow-x-auto"><table class="w-full text-right text-xs">
-        <thead class="bg-zinc-50 text-zinc-500 font-bold border-b border-zinc-100">
+        <thead class="bg-zinc-50/80 text-zinc-500 font-bold border-b border-zinc-100 select-none">
             <tr>
-                <th class="p-4 font-bold">عنوان مقاله پیشنهادی خوشه‌ای</th>
-                <th class="p-4 font-bold">سایت پروژه</th>
-                <th class="p-4 font-bold">دسته‌بندی مادر (Pillar Page)</th>
-                <th class="p-4 font-bold">Intent</th>
-                <th class="p-4 font-bold">تاریخ تولید</th>
+                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
+                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'article_title' %}-article_title{% else %}article_title{% endif %}">
+                        عنوان موضوع سئو شده خوشه‌ای {% if sort_by == 'article_title' %}▲{% elif sort_by == '-article_title' %}▼{% endif %}
+                    </a>
+                </th>
+                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
+                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'category_pillar' %}-category_pillar{% else %}category_pillar{% endif %}">
+                        دسته‌بندی مادر (Pillar Page) {% if sort_by == 'category_pillar' %}▲{% elif sort_by == '-category_pillar' %}▼{% endif %}
+                    </a>
+                </th>
+                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
+                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'intent' %}-intent{% else %}intent{% endif %}">
+                        Search Intent {% if sort_by == 'intent' %}▲{% elif sort_by == '-intent' %}▼{% endif %}
+                    </a>
+                </th>
+                <th class="p-4 text-center cursor-pointer hover:text-zinc-950 transition">
+                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'status' %}-status{% else %}status{% endif %}">
+                        وضعیت ردیف {% if sort_by == 'status' %}▲{% elif sort_by == '-status' %}▼{% endif %}
+                    </a>
+                </th>
+                <th class="p-4 text-center">عملیات تایید و ویرایش</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-zinc-50 font-medium text-zinc-700">
             {% for kw in keywords %}
-            <tr class="hover:bg-zinc-50/40 transition">
-                <td class="p-4 font-bold text-zinc-900">{{ kw.article_title }}</td>
-                <td class="p-4 text-zinc-500">{{ kw.site.name }}</td>
-                <td class="p-4 text-zinc-500">{{ kw.category_pillar }}</td>
-                <td class="p-4"><span class="px-2.5 py-0.5 bg-zinc-100 text-zinc-700 rounded-md text-[10px] font-bold border border-zinc-200/50">{{ kw.intent }}</span></td>
-                <td class="p-4 text-zinc-400 text-[11px]">{{ kw.created_at }}</td>
+            <tr class="hover:bg-zinc-50/50 transition" id="kw-row-{{ kw.id }}">
+                <td class="p-4 font-bold text-zinc-900" id="td-title-{{ kw.id }}">{{ kw.article_title }}</td>
+                <td class="p-4 text-zinc-500" id="td-pillar-{{ kw.id }}">{{ kw.category_pillar }}</td>
+                <td class="p-4"><span id="td-intent-{{ kw.id }}" data-val="{{ kw.intent }}" class="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded text-[10px] font-bold">{{ kw.get_intent_display }}</span></td>
+                <td class="p-4 text-center">
+                    <span id="badge-{{ kw.id }}" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                        {% if kw.status == 'approved' %} bg-emerald-50 text-emerald-700 border border-emerald-100
+                        {% elif kw.status == 'generated' %} bg-indigo-50 text-indigo-700 border border-indigo-100
+                        {% else %} bg-amber-50 text-amber-700 border border-amber-100 {% endif %}">
+                        {{ kw.get_status_display }}
+                    </span>
+                </td>
+                <td class="p-4 text-center flex items-center justify-center gap-1.5">
+                    {% if kw.status != 'generated' %}
+                        <button onclick="updateKwStatus('{{ kw.id }}', 'approved')" class="bg-zinc-900 text-white px-2 py-1 rounded-md text-[10px] hover:bg-zinc-800 transition">✓ تایید</button>
+                        <button onclick="openEditModal('{{ kw.id }}')" class="bg-zinc-100 text-zinc-700 px-2 py-1 rounded-md text-[10px] hover:bg-zinc-200 transition">✍️ ویرایش</button>
+                        <button onclick="updateKwStatus('{{ kw.id }}', 'deleted')" class="bg-zinc-100 text-zinc-400 px-2 py-1 rounded-md text-[10px] hover:bg-red-50 hover:text-red-600 transition">✕ حذف</button>
+                    {% else %}
+                        <span class="text-zinc-400 text-[10px]">استفاده شده 🔒</span>
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="p-8 text-center text-zinc-400">بانک کلمات کلیدی خالی است. فرم بالا را تکمیل کنید.</td></tr>
+            <tr><td colspan="5" class="p-8 text-center text-zinc-400">بانک کلمات کلیدی این پروژه خالی است.</td></tr>
             {% endfor %}
         </tbody>
     </table></div>
+
+    {% if keywords.has_other_pages %}
+    <div class="px-6 py-4 border-t border-zinc-50 flex items-center justify-between bg-zinc-50/20 text-xs text-zinc-500 font-bold">
+        <div>صفحه {{ keywords.number }} از {{ keywords.paginator.num_pages }}</div>
+        <div class="flex items-center gap-1">
+            {% if keywords.has_previous %}
+                <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.previous_page_number }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">← قبلی</a>
+            {% endif %}
+            
+            {% for num in keywords.paginator.page_range %}
+                {% if keywords.number == num %}
+                    <span class="px-3 py-1.5 bg-zinc-950 text-white rounded-xl shadow-sm">{{ num }}</span>
+                {% elif num > keywords.number|add:-3 and num < keywords.number|add:3 %}
+                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ num }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if keywords.has_next %}
+                <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.next_page_number }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">بعدی →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
+
+<div id="edit-topic-modal" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-xl shadow-2xl p-6 text-right">
+        <h3 class="font-bold text-sm text-zinc-900 mb-5 flex items-center gap-1.5"><span>✍️</span> ویرایش و اصلاح تخصصی عنوان</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_keyword_row">
+            <input type="hidden" name="kw_id" id="modal-kw-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">عنوان نهایی مقاله</label>
+                    <input type="text" name="article_title" id="modal-title" required class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">دسته‌بندی مادر (Pillar Page)</label>
+                    <input type="text" name="category_pillar" id="modal-pillar" required class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">Search Intent</label>
+                    <select name="intent" id="modal-intent" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
+                        <option value="Informational">اطلاعاتی (Informational)</option>
+                        <option value="Commercial">تجاری (Commercial)</option>
+                        <option value="Transactional">معاملاتی (Transactional)</option>
+                        <option value="Navigational">ناوبری (Navigational)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-5 mt-5 border-t">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-bold">لغو</button>
+                <button type="submit" class="px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-bold shadow-sm">💾 ذخیره و اصلاح عنوان</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function startAiResearch(event) {
+    event.preventDefault();
+    const form = document.getElementById('ai-research-form');
+    const formData = new FormData(form);
+    const btn = document.getElementById('btn-research-submit');
+    btn.disabled = true;
+    btn.innerText = "⏳ ارسال به صف پردازش...";
+    document.getElementById('kw-progress-card').classList.remove('hidden');
+    document.getElementById('kw-error-box').classList.add('hidden');
+    
+    fetch("", { method: "POST", body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'queued') {
+            const intervalId = setInterval(() => {
+                fetch(`/api/keyword-status/{{ selected_site_id }}/`)
+                .then(r => r.json())
+                .then(statusData => {
+                    document.getElementById('kw-progress-bar').style.width = `${statusData.percentage}%`;
+                    document.getElementById('kw-step-label').innerText = statusData.step_display;
+                    document.getElementById('kw-pct-label').innerText = `${statusData.percentage}%`;
+                    if(statusData.step === 'success') {
+                        clearInterval(intervalId);
+                        location.reload();
+                    } else if(statusData.step === 'failed') {
+                        clearInterval(intervalId);
+                        btn.disabled = false;
+                        btn.innerText = "شروع تحقیق هوش مصنوعی";
+                        const errBox = document.getElementById('kw-error-box');
+                        errBox.innerText = statusData.error_log;
+                        errBox.classList.remove('hidden');
+                        document.getElementById('kw-progress-bar').className = "bg-red-500 h-1.5 rounded-full";
+                    }
+                });
+            }, 3000);
+        }
+    });
+}
+
+function updateKwStatus(kwId, newStatus) {
+    fetch("", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": "{{ csrf_token }}" },
+        body: `action=change_status&kw_id=${kwId}&status=${newStatus}`
+    }).then(res => {
+        if(res.ok && newStatus === 'deleted') document.getElementById(`kw-row-${kwId}`).remove();
+        else if(res.ok) {
+            const badge = document.getElementById(`badge-${kwId}`);
+            badge.innerText = "تایید شده";
+            badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100";
+        }
+    });
+}
+
+function openEditModal(kwId) {
+    document.getElementById('modal-kw-id').value = kwId;
+    document.getElementById('modal-title').value = document.getElementById(`td-title-${kwId}`).innerText;
+    document.getElementById('modal-pillar').value = document.getElementById(`td-pillar-${kwId}`).innerText;
+    document.getElementById('modal-intent').value = document.getElementById(`td-intent-${kwId}`).getAttribute('data-val');
+    document.getElementById('edit-topic-modal').classList.remove('hidden');
+}
+function closeEditModal() { document.getElementById('edit-topic-modal').classList.add('hidden'); }
+</script>
 {% endblock %}

@@ -1,60 +1,201 @@
 {% extends 'seo_services/base.html' %}
 {% block content %}
-<header class="mb-10">
-    <h2 class="text-xl font-bold tracking-tight text-zinc-900">مدیریت پروژه‌ها و دروازه امن وردپرس</h2>
-    <p class="text-zinc-400 text-xs mt-1">اتصال امن دامنه‌ها و تنظیم توکن‌های ۲۴ رقمی اپلیکیشن وردپرس جهت کنترل خودکار سئو</p>
+<header class="mb-10 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+    <div>
+        <h2 class="text-xl font-bold tracking-tight text-zinc-900">مدیریت متمرکز پروژه‌ها</h2>
+        <p class="text-zinc-400 text-xs mt-1 font-medium">پیکربندی اطلاعات اتصال وردپرس، تفکیک مستقل کلیدهای هوش مصنوعی و اتوماسیون انتشار هر دامنه</p>
+    </div>
+    <!-- دکمه مینی‌مال باز کردن پاپ‌آپ ثبت سایت جدید -->
+    <button onclick="openModal('add-site-modal')" class="px-4 py-2 bg-zinc-950 text-white hover:bg-zinc-800 rounded-xl text-xs font-bold transition shadow-sm">
+        ➕ افزودن پروژه جدید
+    </button>
 </header>
 
-<div class="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm mb-10 max-w-5xl">
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-zinc-600 mb-2">نام پروژه یا برند</label>
-                <input type="text" name="name" required placeholder="مثال: سبحان رایانه" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-zinc-600 mb-2">آدرس دقیق دامنه سایت</label>
-                <input type="url" name="domain" required placeholder="https://basabt.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-zinc-600 mb-2">آدرس WordPress API URL</label>
-                <input type="url" name="wp_url" required placeholder="https://basabt.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-zinc-600 mb-2">نام کاربری اصلی وردپرس</label>
-                <input type="text" name="wp_username" required placeholder="admin" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-zinc-600 mb-2">رمز عبور اپلیکیشن وردپرس (رمز عبور ۲۴ رقمی)</label>
-                <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx xxxx" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-bold">
-            </div>
-        </div>
-        <div class="flex justify-end pt-1">
-            <button type="submit" class="px-5 py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition shadow-sm">🌐 اتصال امن سایت جدید به پلتفرم</button>
-        </div>
-    </form>
-</div>
-
+<!-- شبکه‌ کارت‌های مینی‌مال وب‌سایت‌ها (مناسب برای بیش از ۵۰ سایت بدون شلوغی) -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for site in sites %}
-    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-zinc-50 flex items-center justify-center text-sm font-bold border border-zinc-100">🌐</div>
+    <div onclick="openModal('edit-modal-{{ site.id }}')" class="bg-white rounded-2xl border border-zinc-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 flex items-center justify-between hover:border-zinc-300 hover:shadow-md cursor-pointer transition duration-200">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-sm">🌐</div>
             <div>
                 <h4 class="font-bold text-xs text-zinc-900">{{ site.name }}</h4>
-                <a href="{{ site.domain }}" target="_blank" class="text-zinc-400 text-[10px] font-medium hover:underline">{{ site.domain }}</a>
+                <p class="text-zinc-400 text-[10px] font-mono mt-0.5">{{ site.domain }}</p>
             </div>
         </div>
-        <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40"></span>
-            <span class="text-[9px] text-zinc-400 font-bold uppercase">Live</span>
+        <div class="text-left">
+            <span class="w-1.5 h-1.5 inline-block rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+            <span class="text-[9px] font-bold text-zinc-400 block mt-1">تنظیمات ⚙️</span>
+        </div>
+    </div>
+
+    <!-- 💎 پاپ‌آپ اختصاصی پیشرفته مدیریت و تنظیمات همین سایت -->
+    <div id="edit-modal-{{ site.id }}" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 animate-fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-100/50 text-right" onclick="event.stopPropagation()">
+            
+            <div class="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-3xl">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">⚙️</span>
+                    <h3 class="font-bold text-sm text-zinc-900">پیکربندی هسته مرکزی پروژه: {{ site.name }}</h3>
+                </div>
+                <button onclick="closeModal('edit-modal-{{ site.id }}')" class="text-zinc-400 hover:text-zinc-900 font-bold text-sm">✕</button>
+            </div>
+
+            <!-- تب‌های ناوبری داخلی پاپ‌آپ اختصاصی -->
+            <div class="flex border-b border-zinc-100 bg-zinc-50/20 px-6 text-xs font-bold text-zinc-500">
+                <button type="button" onclick="switchTab('{{ site.id }}', 'conn')" id="tab-btn-{{ site.id }}-conn" class="px-4 py-3 border-b-2 border-zinc-900 text-zinc-950">🔐 مشخصات اتصال</button>
+                <button type="button" onclick="switchTab('{{ site.id }}', 'kw')" id="tab-btn-{{ site.id }}-kw" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">🔍 تحقیق کلمات</button>
+                <button type="button" onclick="switchTab('{{ site.id }}', 'txt')" id="tab-btn-{{ site.id }}-txt" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">✍️ نگارش متن</button>
+                <button type="button" onclick="switchTab('{{ site.id }}', 'img')" id="tab-btn-{{ site.id }}-img" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">🖼️ تصویرساز و اتوماسیون</button>
+            </div>
+
+            <form method="POST" class="p-6 space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+
+                <!-- 📁 تب اول: ویرایش اطلاعات اصلی اتصال وردپرس -->
+                <div id="tab-content-{{ site.id }}-conn" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">نام برند پروژه</label>
+                            <input type="text" name="name" value="{{ site.name }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">آدرس دامنه اصلی</label>
+                            <input type="url" name="domain" value="{{ site.domain }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">WordPress REST API URL</label>
+                            <input type="url" name="wp_url" value="{{ site.wp_url }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">نام کاربری ادمین وردپرس</label>
+                            <input type="text" name="wp_username" value="{{ site.wp_username }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">رمز عبور اپلیکیشن (برای تغییر وارد کنید)</label>
+                            <input type="password" name="wp_app_password" value="••••••••••••••••" placeholder="رمز عبور ۲۴ رقمی جدید" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none focus:bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 📁 تب دوم: تنظیمات هوش مصنوعی تحقیق کلمات -->
+                <div id="tab-content-{{ site.id }}-kw" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <select name="ai_provider_keyword" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                            <option value="gapgpt" {% if site.cfg_kw.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
+                            <option value="openai" {% if site.cfg_kw.provider == 'openai' %}selected{% endif %}>OpenAI Direct</option>
+                            <option value="gemini" {% if site.cfg_kw.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
+                        </select>
+                        <input type="text" name="ai_model_keyword" value="{{ site.cfg_kw.model_name|default:'gpt-5-mini' }}" placeholder="نام دقیق مدل" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                    </div>
+                    <!-- اسلایدرهای داینامیک لوکس -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>میزان خلاقیت (Temperature)</span><span class="text-zinc-900 font-bold" id="lbl-temp-kw-{{ site.id }}">{{ site.cfg_kw.temperature|default:0.7 }}</span></div>
+                            <input type="range" name="ai_temp_keyword" min="0" max="1" step="0.1" value="{{ site.cfg_kw.temperature|default:0.7 }}" oninput="document.getElementById('lbl-temp-kw-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>حداکثر طول توکن (Max Tokens)</span><span class="text-zinc-900 font-bold" id="lbl-token-kw-{{ site.id }}">{{ site.cfg_kw.max_tokens|default:4000 }}</span></div>
+                            <input type="range" name="ai_tokens_keyword" min="1000" max="16000" step="500" value="{{ site.cfg_kw.max_tokens|default:4000 }}" oninput="document.getElementById('lbl-token-kw-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
+                        </div>
+                    </div>
+                    <input type="password" name="ai_key_keyword" value="{{ site.cfg_kw.api_key|default:'' }}" placeholder="کلید API اختصاصی فاز تحقیق کلمات" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
+                </div>
+
+                <!-- 📁 تب سوم: تنظیمات هوش مصنوعی نگارش متن مقاله -->
+                <div id="tab-content-{{ site.id }}-txt" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <select name="ai_provider_article_text" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                            <option value="gapgpt" {% if site.cfg_text.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
+                            <option value="openai" {% if site.cfg_text.provider == 'openai' %}selected{% endif %}>OpenAI Direct</option>
+                            <option value="gemini" {% if site.cfg_text.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
+                        </select>
+                        <input type="text" name="ai_model_article_text" value="{{ site.cfg_text.model_name|default:'gpt-5-mini' }}" placeholder="نام دقیق مدل" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>میزان خلاقیت متن</span><span class="text-zinc-900 font-bold" id="lbl-temp-txt-{{ site.id }}">{{ site.cfg_text.temperature|default:0.7 }}</span></div>
+                            <input type="range" name="ai_temp_article_text" min="0" max="1" step="0.1" value="{{ site.cfg_text.temperature|default:0.7 }}" oninput="document.getElementById('lbl-temp-txt-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>حداکثر توکن متن</span><span class="text-zinc-900 font-bold" id="lbl-token-txt-{{ site.id }}">{{ site.cfg_text.max_tokens|default:4000 }}</span></div>
+                            <input type="range" name="ai_tokens_article_text" min="1000" max="16000" step="500" value="{{ site.cfg_text.max_tokens|default:4000 }}" oninput="document.getElementById('lbl-token-txt-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
+                        </div>
+                    </div>
+                    <input type="password" name="ai_key_article_text" value="{{ site.cfg_text.api_key|default:'' }}" placeholder="کلید API اختصاصی نگارش متن" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
+                </div>
+
+                <!-- 📁 تب چهارم: تنظیمات تصویرساز و زمان‌بندی اتوماسیون -->
+                <div id="tab-content-{{ site.id }}-img" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-100/60">
+                        <div class="flex items-center gap-2"><input type="checkbox" name="is_automation_active" {% if site.is_automation_active %}checked{% endif %} class="rounded text-zinc-900"><span class="text-xs text-zinc-700 font-bold">اتوماسیون فعال</span></div>
+                        <input type="number" name="automation_interval_days" value="{{ site.automation_interval_days }}" placeholder="فاصله انتشار (روز)" class="p-2 border rounded bg-white text-xs font-bold text-center">
+                        <select name="content_type" class="p-2 border rounded bg-white text-xs font-medium">
+                            <option value="educational" {% if site.content_type == 'educational' %}selected{% endif %}>آموزشی</option>
+                            <option value="commercial" {% if site.content_type == 'commercial' %}selected{% endif %}>تجاری و محصول</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <select name="ai_provider_article_image" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                            <option value="gapgpt" {% if site.cfg_img.provider == 'gapgpt' %}selected{% endif %}>GapGPT API (Imagen 4)</option>
+                            <option value="openai" {% if site.cfg_img.provider == 'openai' %}selected{% endif %}>OpenAI (DallE 3)</option>
+                        </select>
+                        <input type="text" name="ai_model_article_image" value="{{ site.cfg_img.model_name|default:'imagen-4.0-ultra-generate-001' }}" placeholder="مدل تصویرساز" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
+                    </div>
+                    <input type="password" name="ai_key_article_image" value="{{ site.cfg_img.api_key|default:'' }}" placeholder="کلید API اختصاصی بخش تصویرساز" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
+                </div>
+
+                <div class="flex justify-end gap-3 border-t border-zinc-100 pt-4">
+                    <button type="button" onclick="closeModal('edit-modal-{{ site.id }}')" class="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition">انصراف</button>
+                    <button type="submit" class="px-5 py-2 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition shadow-sm">ذخیره نهایی کل تغییرات پروژه</button>
+                </div>
+            </form>
         </div>
     </div>
     {% empty %}
-    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">هیچ دامنه‌ای متصل نشده است.</div>
+    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">پروژه‌ای یافت نشد. دکمه افزودن پروژه جدید را بزنید.</div>
     {% endfor %}
 </div>
+
+<!-- ➕ پاپ‌آپ مجزا و شکیل ثبت سایت جدید -->
+<div id="add-site-modal" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="closeModal('add-site-modal')">
+    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-6 text-right" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-sm text-zinc-900 mb-6 flex items-center gap-2"><span>🌐</span> اتصال وب‌سایت جدید به پلتفرم تجاری</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input type="text" name="name" required placeholder="نام پروژه (مثال: سبحان رایانه)" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+                <input type="url" name="domain" required placeholder="دامنه اصلی (https://id724.com)" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <input type="url" name="wp_url" required placeholder="آدرس API وردپرس (https://id724.com)" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input type="text" name="wp_username" required placeholder="نام کاربری ادمین وردپرس" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+                <input type="password" name="wp_app_password" required placeholder="رمز عبور ۲۴ رقمی اپلیکیشن وردپرس" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-bold">
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onclick="closeModal('add-site-modal')" class="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-bold">لغو</button>
+                <button type="submit" class="px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-bold">🚀 احراز هویت و اتصال سایت</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- جاوااسکریپت بومی و بهینه پاپ‌آپ‌ها و سوییچرهای تب‌های داخلی -->
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function switchTab(siteId, tabName) {
+    const tabs = ['conn', 'kw', 'txt', 'img'];
+    tabs.forEach(t => {
+        document.getElementById(`tab-content-${siteId}-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${siteId}-${t}`).classList.remove('border-zinc-900', 'text-zinc-950');
+        document.getElementById(`tab-btn-${siteId}-${t}`).classList.add('border-transparent');
+    });
+    document.getElementById(`tab-content-${siteId}-${tabName}`).classList.remove('hidden');
+    document.getElementById(`tab-btn-${siteId}-${tabName}`).classList.add('border-zinc-900', 'text-zinc-950');
+}
+</script>
 {% endblock %}

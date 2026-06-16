@@ -1,61 +1,171 @@
 {% extends 'seo_services/base.html' %}
 {% block content %}
 <header class="mb-10">
-    <h2 class="text-xl font-bold tracking-tight text-zinc-900">کارخانه تولید محتوای خودکار</h2>
-    <p class="text-zinc-400 text-xs mt-1">تولید مقالات جامع بالای ۱۵۰۰ کلمه به همراه لینک‌سازی هوشمند داخلی و تصاویر تولید شده با هوش مصنوعی مابین متن</p>
+    <h2 class="text-xl font-bold tracking-tight text-zinc-900">کارخانه اتوماسیون و تولید محتوای سئو شده</h2>
+    <p class="text-zinc-400 text-xs mt-1.5 font-medium">نگارش متون جامع، درج تصاویر بین‌متنی هوشمند و پایش زنده جریان پردازش تسک‌ها با قابلیت نمایش خطای مراحل</p>
 </header>
 
-<div class="bg-white rounded-2xl border border-zinc-100 p-5 shadow-sm mb-10 max-w-5xl">
-    <form method="POST" class="flex flex-col md:flex-row items-end gap-4">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="create_manual">
-        <div class="w-full md:w-52">
-            <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">انتخاب پروژه سایت</label>
-            <select name="site_id" class="w-full px-3 py-2 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none font-medium">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 max-w-5xl items-stretch">
+    
+    <div class="bg-gradient-to-br from-zinc-950 to-zinc-800 text-white rounded-2xl p-6 shadow-md flex flex-col justify-between lg:col-span-1">
+        <div>
+            <h4 class="text-xs font-bold tracking-tight text-white flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> خط تولید خودکار محتوا
+            </h4>
+            <p class="text-zinc-400 text-[10px] mt-2 font-medium leading-relaxed">
+                با انتخاب پروژه و زدن دکمه شلیک، سیستم به صورت خودکار اولین موضوع تایید شده در بانک کلمات کلیدی همان سایت را قفل کرده، مقاله را تولید و روی موضوع تیک «تولید شده 📝» می‌زند.
+            </p>
+        </div>
+        <div class="space-y-2.5 mt-6">
+            <label class="block text-[9px] font-bold text-zinc-400 uppercase">انتخاب دامنه هدف:</label>
+            <select id="auto-site-id" class="w-full px-3 py-2 bg-zinc-800 text-white rounded-xl text-xs focus:outline-none border border-zinc-700 font-medium">
                 {% for site in sites %} <option value="{{ site.id }}">{{ site.name }}</option> {% endfor %}
             </select>
+            <button onclick="triggerAutoNextGeneration()" class="w-full py-2 bg-white text-zinc-950 hover:bg-zinc-100 rounded-xl text-xs font-bold transition shadow-sm">🚀 تولید مقاله بعدی سایت</button>
         </div>
-        <div class="flex-1 w-full">
-            <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">عنوان یا موضوع مقاله جدید مد نظر شما</label>
-            <input type="text" name="title" required placeholder="مثال: آموزش قدم به قدم ارتقا و سرویس سخت‌افزاری لپ‌تاپ لنوو" class="w-full px-3 py-2 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none font-medium">
+    </div>
+
+    <div class="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm flex flex-col justify-between lg:col-span-2">
+        <div>
+            <h4 class="text-xs font-bold text-zinc-800 flex items-center gap-1.5"><span>✍️</span> رزرو عنوان اختصاصی خارج از جدول</h4>
+            <p class="text-zinc-400 text-[10px] mt-1 font-medium">اگر مایلید موضوعی خاص و خارج از استراتژی استخراج‌شده تولید کنید، فرم زیر را تکمیل کنید.</p>
         </div>
-        <div class="w-full md:w-28">
-            <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">تعداد عکس بین متن</label>
-            <input type="number" name="image_count" value="2" min="0" max="10" class="w-full px-3 py-2 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none font-bold text-center">
-        </div>
-        <button type="submit" class="w-full md:w-auto px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition whitespace-nowrap">➕ رزرو در کارخانه محتوا</button>
-    </form>
+        <form method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_manual">
+            <div>
+                <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">پروژه سایت</label>
+                <select name="site_id" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
+                    {% for site in sites %} <option value="{{ site.id }}">{{ site.name }}</option> {% endfor %}
+                </select>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">عنوان یا موضوع مقاله جدید</label>
+                <input type="text" name="title" required placeholder="مثال: راهنمای عیب‌یابی مانیتورهای Acer" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
+            </div>
+            <div class="w-full">
+                <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">تعداد تصاویر متن</label>
+                <input type="number" name="image_count" value="2" min="0" max="10" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold text-center focus:outline-none">
+            </div>
+            <button type="submit" class="sm:col-span-2 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">افزودن به صف رزروها</button>
+        </form>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for art in articles %}
-    <div class="bg-white rounded-2xl border border-zinc-100 shadow-[0_2px_10px_rgba(0,0,0,0.01)] p-5 flex flex-col justify-between hover:border-zinc-200 transition duration-200">
+    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 flex flex-col justify-between hover:border-zinc-200 transition" id="article-card-{{ art.id }}">
         <div>
             <div class="flex justify-between items-center mb-3">
                 <span class="text-[10px] bg-zinc-50 text-zinc-600 px-2.5 py-1 rounded-lg font-bold border border-zinc-100">{{ art.site.name }}</span>
-                <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold {% if art.status == 'published' %} bg-emerald-50 text-emerald-700 border border-emerald-100 {% else %} bg-amber-50 text-amber-700 border border-amber-100 {% endif %}">
+                <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-zinc-50 text-zinc-700 border" id="status-badge-{{ art.id }}">
                     {{ art.get_status_display }}
                 </span>
             </div>
-            <h4 class="font-bold text-xs text-zinc-900 leading-relaxed line-clamp-2 mb-2">{{ art.title }}</h4>
-            <p class="text-zinc-400 text-[11px]">ساختار مدیا: <span class="font-bold text-zinc-700">{{ art.image_count }} عکس مابین فواصل متن</span></p>
-            {% if art.slug %}<p class="text-zinc-400 text-[10px] mt-2 font-mono bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100 truncate">Slug: {{ art.slug }}</p>{% endif %}
+            <h4 class="font-bold text-xs text-zinc-900 leading-relaxed mb-3">{{ art.title }}</h4>
+            <p class="text-zinc-400 text-[11px]">ساختار تصاویر مابین متن: <span class="font-bold text-zinc-700">{{ art.image_count }} عکس اختصاصی</span></p>
+            
+            <div class="mt-4 pt-4 border-t border-zinc-50 {% if art.current_step == 'idle' or art.current_step == 'success' %}hidden{% endif %}" id="progress-container-{{ art.id }}">
+                <p class="text-[10px] font-bold text-zinc-500 mb-1.5" id="step-label-{{ art.id }}">{{ art.get_current_step_display }}</p>
+                <div class="w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" id="progress-bar-{{ art.id }}" style="width: 0%;"></div>
+                </div>
+                <div class="mt-2.5 p-2.5 bg-red-50 border border-red-100 rounded-lg text-[10px] text-red-700 font-medium leading-relaxed {% if not art.error_log %}hidden{% endif %}" id="error-box-{{ art.id }}">
+                    {{ art.error_log }}
+                </div>
+            </div>
         </div>
         
-        <div class="border-t border-zinc-50 pt-4 mt-4 flex items-center justify-between">
+        <div class="border-t border-zinc-50 pt-4 mt-5 flex items-center justify-between">
             <span class="text-[10px] text-zinc-400 font-medium">{{ art.created_at }}</span>
-            <form method="POST" class="inline">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="generate">
-                <input type="hidden" name="article_id" value="{{ art.id }}">
-                <button type="submit" class="px-3 py-1.5 bg-zinc-50 border border-zinc-100 hover:bg-zinc-950 hover:text-white text-zinc-800 rounded-xl text-[10px] font-bold transition duration-200">
-                    🤖 دستور تولید با هوش مصنوعی
-                </button>
-            </form>
+            <button onclick="startAiGeneration('{{ art.id }}')" id="btn-gen-{{ art.id }}" class="px-3 py-1.5 bg-zinc-50 border border-zinc-100 hover:bg-zinc-950 hover:text-white rounded-xl text-[10px] font-bold transition">
+                🚀 شروع پردازش هوش مصنوعی
+            </button>
         </div>
     </div>
     {% empty %}
-    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">هیچ ردیف مقاله‌ای در کارخانه رزرو یا تولید نشده است.</div>
+    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">سندی در کارخانه موجود نیست.</div>
     {% endfor %}
 </div>
+
+<script>
+// ۱. تابع موتور شلیک اتوماتیک کارخانه (برداشتن موضوع بعدی)
+function triggerAutoNextGeneration() {
+    const siteId = document.getElementById('auto-site-id').value;
+    
+    fetch("{% url 'article_factory' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": "{{ csrf_token }}" },
+        body: `action=auto_generate_next&site_id=${siteId}&image_count=2`
+    }).then(res => res.json().then(data => {
+        if (data.status === 'queued') {
+            // رفرش آنی صفحه جهت ظاهر شدن کارت جدید متصل به استپر زنده
+            location.reload();
+        } else {
+            alert("❌ خطای پلتفرم: " + data.message);
+        }
+    })).catch(err => {
+        alert("❌ خطای ارتباط با بانک کلمات کلیدی این سایت. ابتدا بررسی کنید موضوع تایید شده‌ای وجود دارد یا خیر.");
+    });
+}
+
+// ۲. تابع پایش ثانیه‌ای مراحل تولید مقاله (اصلی و خودکار)
+function startAiGeneration(articleId) {
+    const btn = document.getElementById(`btn-gen-${articleId}`);
+    btn.disabled = true;
+    btn.innerText = "⏳ در صف پردازش...";
+    
+    document.getElementById(`progress-container-${articleId}`).classList.remove('hidden');
+    document.getElementById(`error-box-${articleId}`).classList.add('hidden');
+    
+    fetch("{% url 'article_factory' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: `action=generate&article_id=${articleId}`
+    }).then(response => {
+        const intervalId = setInterval(() => {
+            fetch(`/api/article-status/${articleId}/`)
+                .then(res => {
+                    if (!res.ok) throw new Error("اتصال ناموفق سرور");
+                    return res.json();
+                })
+                .then(data => {
+                    const progressBar = document.getElementById(`progress-bar-${articleId}`);
+                    const stepLabel = document.getElementById(`step-label-${articleId}`);
+                    const errorBox = document.getElementById(`error-box-${articleId}`);
+                    
+                    progressBar.style.width = `${data.percentage}%`;
+                    stepLabel.innerText = data.step_display;
+                    
+                    if (data.step === 'success') {
+                        clearInterval(intervalId);
+                        document.getElementById(`status-badge-${articleId}`).innerText = "ارسال شده به وردپرس";
+                        btn.innerText = "✅ تکمیل شد";
+                        setTimeout(() => { document.getElementById(`progress-container-${articleId}`).classList.add('hidden'); }, 3000);
+                    } else if (data.step === 'failed') {
+                        clearInterval(intervalId);
+                        btn.disabled = false;
+                        btn.innerText = "🔄 تلاش مجدد";
+                        errorBox.innerText = data.error_log;
+                        errorBox.classList.remove('hidden');
+                        progressBar.classList.remove('bg-indigo-600');
+                        progressBar.classList.add('bg-red-500');
+                    }
+                })
+                .catch(err => {
+                    // 🛡️ سپر محافظتی: اگر سرور وب کرش کرد، فرانت‌اَند متوقف شده و راهنمایی می‌کند
+                    clearInterval(intervalId);
+                    btn.disabled = false;
+                    btn.innerText = "🔄 تلاش مجدد (خطای شبکه)";
+                    const errorBox = document.getElementById(`error-box-${articleId}`);
+                    errorBox.innerText = "اتصال به کانتینر وب قطع شد (net::ERR_EMPTY_RESPONSE). پلتفرم احتمالاً به دلیل حجم حافظه موقت تصاویر کرش کرده است. لاگ‌های داکر را چک کنید.";
+                    errorBox.classList.remove('hidden');
+                });
+        }, 3000);
+    });
+}
+</script>
 {% endblock %}
