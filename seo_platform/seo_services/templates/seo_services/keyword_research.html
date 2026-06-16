@@ -1,0 +1,66 @@
+{% extends 'seo_services/base.html' %}
+{% block content %}
+<header class="mb-10">
+    <h2 class="text-xl font-bold tracking-tight text-zinc-900">تحقیق کلمات کلیدی هوشمند (Topic Clusters)</h2>
+    <p class="text-zinc-400 text-xs mt-1">اسکرپ زنده ساختار هدینگ‌های رقبای رتبه اول گوگل و استخراج خودکار ۸۰ عنوان خوشه‌ای با هوش مصنوعی</p>
+</header>
+
+<div class="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm mb-8 max-w-5xl">
+    <form method="POST" class="space-y-5">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-[11px] font-bold text-zinc-600 mb-2">انتخاب دامنه پروژه مقصد</label>
+                <select name="site_id" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium">
+                    {% for site in sites %} <option value="{{ site.id }}">{{ site.name }} ({{ site.domain }})</option> {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-zinc-600 mb-2">کلمات کلیدی اصلی پایه (با کاما جدا کنید)</label>
+                <input type="text" name="core_keywords" required placeholder="مثال: لپ تاپ استوک، قیمت مانیتور ارگونومیک" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-[11px] font-bold text-zinc-600 mb-2">توضیحات بیزینس شما برای آموزش هوش مصنوعی</label>
+                <textarea name="business_desc" rows="2" placeholder="فروشگاه اینترنتی کامپیوتر سبحان رایانه با تمرکز بر قطعات استوک..." class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium"></textarea>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-zinc-600 mb-2">آدرس سایت رقبا (با کاما جدا کنید)</label>
+                <textarea name="competitors" rows="2" placeholder="https://competitor1.com, https://competitor2.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition text-xs font-medium"></textarea>
+            </div>
+        </div>
+        <div class="flex justify-end pt-1">
+            <button type="submit" class="px-5 py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition shadow-sm">⚡ شروع استخراج استراتژی و کلمات کلیدی رقبا</button>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-zinc-50"><h4 class="font-bold text-xs text-zinc-900">بانک عناوین و خوشه‌های محتوایی استخراج شده</h4></div>
+    <div class="overflow-x-auto"><table class="w-full text-right text-xs">
+        <thead class="bg-zinc-50 text-zinc-500 font-bold border-b border-zinc-100">
+            <tr>
+                <th class="p-4 font-bold">عنوان مقاله پیشنهادی خوشه‌ای</th>
+                <th class="p-4 font-bold">سایت پروژه</th>
+                <th class="p-4 font-bold">دسته‌بندی مادر (Pillar Page)</th>
+                <th class="p-4 font-bold">Intent</th>
+                <th class="p-4 font-bold">تاریخ تولید</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-50 font-medium text-zinc-700">
+            {% for kw in keywords %}
+            <tr class="hover:bg-zinc-50/40 transition">
+                <td class="p-4 font-bold text-zinc-900">{{ kw.article_title }}</td>
+                <td class="p-4 text-zinc-500">{{ kw.site.name }}</td>
+                <td class="p-4 text-zinc-500">{{ kw.category_pillar }}</td>
+                <td class="p-4"><span class="px-2.5 py-0.5 bg-zinc-100 text-zinc-700 rounded-md text-[10px] font-bold border border-zinc-200/50">{{ kw.intent }}</span></td>
+                <td class="p-4 text-zinc-400 text-[11px]">{{ kw.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="p-8 text-center text-zinc-400">بانک کلمات کلیدی خالی است. فرم بالا را تکمیل کنید.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table></div>
+</div>
+{% endblock %}

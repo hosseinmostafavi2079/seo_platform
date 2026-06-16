@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SaaS SEO Hub{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face { font-family: 'IRANSans'; src: url("{% static 'fonts/IRANSansWeb_Medium.ttf' %}") format('truetype'); font-weight: normal; }
+        @font-face { font-family: 'IRANSans'; src: url("{% static 'fonts/IRANSansWeb_Bold.ttf' %}") format('truetype'); font-weight: bold; }
+        body { font-family: 'IRANSans', sans-serif; background-color: #fafafa; }
+    </style>
+</head>
+<body class="text-zinc-900 antialiased selection:bg-zinc-900 selection:text-white">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+        <aside class="w-full md:w-64 bg-white border-l border-zinc-100 p-6 flex flex-col justify-between shadow-[1px_0_5px_rgba(0,0,0,0.01)]">
+            <div>
+                <div class="flex items-center gap-3 mb-10 px-2">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-zinc-900 to-zinc-800 flex items-center justify-center text-white text-xs font-black shadow-sm">Σ</div>
+                    <span class="font-bold text-xs tracking-tight text-zinc-900">QUANTUM <span class="text-indigo-600 font-medium">SEO</span></span>
+                </div>
+                
+                <nav class="space-y-1">
+                    <a href="{% url 'user_dashboard' %}" class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all duration-200 {% if active_menu == 'dashboard' %} bg-zinc-900 text-white shadow-sm {% else %} text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 {% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V16zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V16z"/></svg>
+                        میز کار و آمار کلان
+                    </a>
+                    <a href="{% url 'keyword_research' %}" class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all duration-200 {% if active_menu == 'keywords' %} bg-zinc-900 text-white shadow-sm {% else %} text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 {% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        تحقیق کلمات کلیدی
+                    </a>
+                    <a href="{% url 'article_factory' %}" class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all duration-200 {% if art_menu == 'articles' or active_menu == 'articles' %} bg-zinc-900 text-white shadow-sm {% else %} text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 {% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        کارخانه تولید مقاله
+                    </a>
+                    <a href="{% url 'sites_management' %}" class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all duration-200 {% if active_menu == 'sites' %} bg-zinc-900 text-white shadow-sm {% else %} text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 {% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                        مدیریت سایت‌ها
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="border-t border-zinc-100 pt-4 flex items-center justify-between text-xs font-medium">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-700">A</div>
+                    <div>
+                        <p class="font-bold text-zinc-900">{{ request.user.username }}</p>
+                        <p class="text-[10px] text-zinc-400 font-medium">مدیر ارشد پلتفرم</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full overflow-hidden">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-6 p-4 bg-zinc-950 text-white rounded-2xl text-xs font-bold shadow-sm flex items-center gap-2.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</body>
+</html>

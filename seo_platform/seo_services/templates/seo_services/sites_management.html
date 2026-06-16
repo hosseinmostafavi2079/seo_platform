@@ -1,0 +1,60 @@
+{% extends 'seo_services/base.html' %}
+{% block content %}
+<header class="mb-10">
+    <h2 class="text-xl font-bold tracking-tight text-zinc-900">مدیریت پروژه‌ها و دروازه امن وردپرس</h2>
+    <p class="text-zinc-400 text-xs mt-1">اتصال امن دامنه‌ها و تنظیم توکن‌های ۲۴ رقمی اپلیکیشن وردپرس جهت کنترل خودکار سئو</p>
+</header>
+
+<div class="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm mb-10 max-w-5xl">
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-zinc-600 mb-2">نام پروژه یا برند</label>
+                <input type="text" name="name" required placeholder="مثال: سبحان رایانه" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-zinc-600 mb-2">آدرس دقیق دامنه سایت</label>
+                <input type="url" name="domain" required placeholder="https://basabt.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-zinc-600 mb-2">آدرس WordPress API URL</label>
+                <input type="url" name="wp_url" required placeholder="https://basabt.ir" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-zinc-600 mb-2">نام کاربری اصلی وردپرس</label>
+                <input type="text" name="wp_username" required placeholder="admin" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-zinc-600 mb-2">رمز عبور اپلیکیشن وردپرس (رمز عبور ۲۴ رقمی)</label>
+                <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx xxxx" class="w-full px-3.5 py-2.5 bg-zinc-50/60 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-bold">
+            </div>
+        </div>
+        <div class="flex justify-end pt-1">
+            <button type="submit" class="px-5 py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition shadow-sm">🌐 اتصال امن سایت جدید به پلتفرم</button>
+        </div>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for site in sites %}
+    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-zinc-50 flex items-center justify-center text-sm font-bold border border-zinc-100">🌐</div>
+            <div>
+                <h4 class="font-bold text-xs text-zinc-900">{{ site.name }}</h4>
+                <a href="{{ site.domain }}" target="_blank" class="text-zinc-400 text-[10px] font-medium hover:underline">{{ site.domain }}</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40"></span>
+            <span class="text-[9px] text-zinc-400 font-bold uppercase">Live</span>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">هیچ دامنه‌ای متصل نشده است.</div>
+    {% endfor %}
+</div>
+{% endblock %}
