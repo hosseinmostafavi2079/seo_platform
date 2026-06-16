@@ -1,0 +1,26 @@
+/* بارگذاری فونت‌های ایران سانس شما از پوشه فونتی که قبلاً ساختی */
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSansWeb_Medium.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSansWeb_Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* اعمال فونت لوکس ایران سانس به تمام اجزا و منوهای داشبورد جدید */
+body, h1, h2, h3, h4, h5, h6, .main-sidebar, .nav-link, table, th, td, span, input, select, textarea, .btn, .brand-text {
+    font-family: 'IRANSans', Tahoma, sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* راست‌چین کردن آیکون‌ها و ساختار منوی جدید */
+.nav-sidebar .nav-link>p>.right {
+    left: 1rem !important;
+    right: auto !important;
+}

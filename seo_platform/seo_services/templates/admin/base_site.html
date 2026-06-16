@@ -1,0 +1,121 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | پنل مدیریت هوشمند سئو{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* ۱. تعریف و بارگذاری فونت‌های اختصاصی ایران سانس شما از دیتابیس داخلی */
+    @font-face {
+        font-family: 'IRANSans';
+        src: url("{% static 'seo_services/fonts/IRANSansWeb_Medium.ttf' %}") format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'IRANSans';
+        src: url("{% static 'seo_services/fonts/IRANSansWeb_Bold.ttf' %}") format('truetype');
+        font-weight: bold;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'IRANSans';
+        src: url("{% static 'seo_services/fonts/IRANSansWeb_Light.ttf' %}") format('truetype');
+        font-weight: 300;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'IRANSans';
+        src: url("{% static 'seo_services/fonts/IRANSansWeb_Black.ttf' %}") format('truetype');
+        font-weight: 900;
+        font-style: normal;
+    }
+
+    /* ۲. اعمال فونت ایران سانس به کل بدنه، جداول، فیلدها و دکمه‌ها */
+    body, h1, h2, h3, h4, h5, h6, th, td, input, select, textarea, .button, .submit-row input, #branding h1 {
+        font-family: 'IRANSans', Tahoma, sans-serif !important;
+    }
+    
+    /* تغییر رنگ هدر اصلی پنل به رنگ سرمه‌ای تیره بیزینسی */
+    #header {
+        background: #0e1a35 !important; 
+        color: #ffffff !important;
+        padding: 15px 40px !important;
+    }
+    
+    /* طلایی کردن عنوان اصلی پلتفرم */
+    #branding h1 a {
+        color: #ffb300 !important;
+        font-weight: bold !important;
+        font-size: 19px !important;
+    }
+    
+    /* استایل‌دهی نوار موقعیت بالای جداول */
+    div.breadcrumbs {
+        background: #f4f6fa !important;
+        color: #333333 !important;
+        padding: 10px 40px !important;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 12px;
+    }
+    
+    div.breadcrumbs a {
+        color: #310eb2 !important;
+        font-weight: bold;
+    }
+    
+    /* مدرن‌سازی سرستون‌های جداول خدمات سئو */
+    .module h2, .module caption, .inline-group h2 {
+        background: #310eb2 !important;
+        font-weight: bold !important;
+        padding: 12px !important;
+        border-radius: 6px 6px 0 0;
+    }
+
+    /* رند و نرم کردن حاشیه جداول و فیلدها */
+    .module, table, td, th, input, select, textarea {
+        border-radius: 6px !important;
+    }
+    
+    th {
+        font-weight: bold !important;
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    /* مدرن‌سازی و استایل دکمه‌های عملیاتی ادمین */
+    .button, input[type=submit], input[type=button], .submit-row input {
+        background: #310eb2 !important;
+        border: none !important;
+        padding: 10px 20px !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        cursor: pointer;
+        border-radius: 4px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .button:hover, input[type=submit]:hover {
+        background: #230891 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* متمایز کردن دکمه‌های اصلی و تایید نهایی با رنگ زرد/طلایی */
+    .button.default, input[type=submit].default {
+        background: #ffb300 !important;
+        color: #0e1a35 !important;
+        font-weight: bold !important;
+    }
+
+    .button.default:hover, input[type=submit].default:hover {
+        background: #e6a100 !important;
+    }
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">🚀 پلتفرم استراتژیک و کارخانه محتوای سئو</a>
+</h1>
+{% endblock %}

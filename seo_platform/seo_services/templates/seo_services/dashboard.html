@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد اتوماسیون استراتژیک سئو</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* تزریق مستقیم فونت ایران‌سانس شما به شاسی فرانت‌اند */
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('/static/seo_services/fonts/IRANSansWeb_Medium.ttf') format('truetype');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('/static/seo_services/fonts/IRANSansWeb_Bold.ttf') format('truetype');
+            font-weight: bold;
+        }
+        body {
+            font-family: 'IRANSans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#f8f9fa] text-[#1e293b] antialiased">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+        
+        <aside class="w-full md:w-64 bg-white border-l border-gray-100 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+                <div class="flex items-center gap-3 mb-10">
+                    <div class="w-8 h-8 rounded-xl bg-gray-950 flex items-center justify-center text-white text-lg font-bold">S</div>
+                    <h1 class="font-bold text-base tracking-tight text-gray-900">پلتفرم هوشمند سئو</h1>
+                </div>
+                
+                <nav class="space-y-1.5">
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 bg-gray-950 text-white rounded-xl font-medium text-xs transition">
+                        <span>📊</span> میز کار اصلی
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-medium text-xs transition">
+                        <span>🔍</span> تحقیق کلمات کلیدی
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-medium text-xs transition">
+                        <span>📝</span> کارخانه تولید محتوا
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-medium text-xs transition">
+                        <span>🌐</span> مدیریت پروژه‌ها (سایت‌ها)
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="border-t border-gray-100 pt-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">A</div>
+                    <div class="text-[11px]">
+                        <p class="font-bold text-gray-800">{{ request.user.username }}</p>
+                        <p class="text-gray-400">مدیر ارشد پلتفرم</p>
+                    </div>
+                </div>
+                <a href="/admin/logout/" class="text-gray-400 hover:text-red-500 text-xs">⚙️</a>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10">
+            
+            <header class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-10">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">خلاصه وضعیت پلتفرم تجاری شما</h2>
+                    <p class="text-gray-400 text-xs mt-1">مدیریت متمرکز کلمات کلیدی، استراتژی محتوا و انتشار مستقیم در وردپرس</p>
+                </div>
+                <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-gray-600">موتور هوش مصنوعی: فعال زنده</span>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <p class="text-gray-400 text-xs font-medium">تعداد کل سایت‌های متصل</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-2">{{ total_sites }} <span class="text-xs font-normal text-gray-400">دامنه فعال</span></h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <p class="text-gray-400 text-xs font-medium">بانک کلمات کلیدی استخراج‌شده</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-2">{{ total_keywords }} <span class="text-xs font-normal text-gray-400">عبارت هدف</span></h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <p class="text-gray-400 text-xs font-medium">مقالات تولید شده سئو</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-2">{{ total_articles }} <span class="text-xs font-normal text-gray-400">محتوای جامع</span></h3>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-gray-50 flex justify-between items-center">
+                    <h4 class="font-bold text-sm text-gray-900">آخرین عناوین و کلمات کلیدی در انتظار تایید شما</h4>
+                    <span class="text-[11px] bg-gray-50 px-2.5 py-1 rounded-lg text-gray-500">به‌روزرسانی اتوماتیک</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-gray-50/70 text-gray-500 uppercase font-bold border-b border-gray-100">
+                            <tr>
+                                <th class="p-4">عنوان مقاله پیشنهادی خوشه‌ای</th>
+                                <th class="p-4">سایت هدف</th>
+                                <th class="p-4">دسته‌بندی مادر (Pillar)</th>
+                                <th class="p-4">Search Intent</th>
+                                <th class="p-4 text-center">وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for kw in recent_keywords %}
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="p-4 font-medium text-gray-900">{{ kw.article_title }}</td>
+                                <td class="p-4 text-gray-500">{{ kw.site.name }}</td>
+                                <td class="p-4 text-gray-500">{{ kw.category_pillar }}</td>
+                                <td class="p-4">
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold">{{ kw.intent }}</span>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-medium border border-amber-100/50">در انتظار بررسی</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="p-8 text-center text-gray-400 text-xs">هنوز هیچ فرآیند تحقیق کلمات کلیدی انجام نشده است. اولین پروژه را استارت بزنید!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>
