@@ -6,9 +6,8 @@ class LLMService:
     @staticmethod
     def send_request(site_id, feature_type, system_message, user_message):
         """
-        ارسال هوشمند درخواست به هوش مصنوعی بر اساس تنظیمات اختصاصی هر سایت
+        ارسال هوشمند و پایدار درخواست به هوش مصنوعی با فعال‌سازی JSON Mode نیتیو
         """
-        # ۱. خواندن تنظیمات اختصاصی سایت از دیتابیس
         config = AIConfig.objects.filter(site_id=site_id, feature_type=feature_type).first()
         
         if not config or not config.api_key:
@@ -20,9 +19,9 @@ class LLMService:
         max_tokens = config.max_tokens
         api_key = config.api_key
 
-        # ۲. پردازش درخواست برای پرووایدرهای مبتنی بر ساختار OpenAI (شامل خود OpenAI و GapGPT)
+        # پردازش درخواست پرووایدرهای مبتنی بر ساختار OpenAI (شامل OpenAI و GapGPT)
         if provider in ['openai', 'gapgpt']:
-            url = "https://api.openai.com/v1/chat/completions" if provider == 'openai' else "https://api.gapgpt.app/v1/chat/completions"
+            url = "[https://api.openai.com/v1/chat/completions](https://api.openai.com/v1/chat/completions)" if provider == 'openai' else "[https://api.gapgpt.app/v1/chat/completions](https://api.gapgpt.app/v1/chat/completions)"
             
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -36,7 +35,8 @@ class LLMService:
                     {"role": "user", "content": user_message}
                 ],
                 "temperature": temperature,
-                "max_tokens": max_tokens
+                "max_tokens": max_tokens,
+                "response_format": {"type": "json_object"}  # 🎯 فعال‌سازی حالت بومی ساختار JSON
             }
             
             try:
@@ -49,24 +49,22 @@ class LLMService:
             except Exception as e:
                 raise Exception(f"خطا در ارتباط با {provider}: {str(e)}")
 
-        # ۳. پردازش درخواست برای گوگل جمینای (Google Gemini)
+        # پردازش درخواست برای گوگل جمینای (Google Gemini) طبق داک رسمی پرووایدر
         elif provider == 'gemini':
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            
-            headers = {
-                "Content-Type": "application/json"
-            }
-            
-            # ادغام پرامپت سیستم و کاربر برای ساختار نیتیو جمینای
-            full_prompt = f"{system_message}\n\nتسک شما:\n{user_message}"
+            url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={api_key}"
+            headers = {"Content-Type": "application/json"}
             
             payload = {
                 "contents": [{
-                    "parts": [{"text": full_prompt}]
+                    "parts": [{"text": user_message}]
                 }],
+                "systemInstruction": {  # 🧠 ارسال تفکیک شده پرامپت سیستم
+                    "parts": [{"text": system_message}]
+                },
                 "generationConfig": {
                     "temperature": temperature,
-                    "maxOutputTokens": max_tokens
+                    "maxOutputTokens": max_tokens,
+                    "responseMimeType": "application/json"  # 🎯 اجبار جمینای به خروجی جی‌سان کاملاً ساختاریافته
                 }
             }
             
