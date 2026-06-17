@@ -76,11 +76,21 @@
             </div>
         </div>
         
-        <div class="border-t border-zinc-50 pt-4 mt-5 flex items-center justify-between">
+        <div class="border-t border-zinc-50 pt-4 mt-5 flex items-center justify-between" id="action-wrapper-{{ art.id }}">
             <span class="text-[10px] text-zinc-400 font-medium">{{ art.created_at }}</span>
-            <button onclick="startAiGeneration('{{ art.id }}')" id="btn-gen-{{ art.id }}" class="px-3 py-1.5 bg-zinc-50 border border-zinc-100 hover:bg-zinc-950 hover:text-white rounded-xl text-[10px] font-bold transition">
-                🚀 شروع پردازش هوش مصنوعی
-            </button>
+            
+            {% if art.status == 'sent_to_wp' or art.current_step == 'success' %}
+                <div class="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 text-[10px] font-bold select-none">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    ارسال شده به وردپرس
+                </div>
+            {% else %}
+                <button onclick="startAiGeneration('{{ art.id }}')" id="btn-gen-{{ art.id }}" class="px-3 py-1.5 bg-zinc-50 border border-zinc-100 hover:bg-zinc-950 hover:text-white rounded-xl text-[10px] font-bold transition">
+                    🚀 شروع پردازش هوش مصنوعی
+                </button>
+            {% endif %}
         </div>
     </div>
     {% empty %}
@@ -143,7 +153,19 @@ function startAiGeneration(articleId) {
                     if (data.step === 'success') {
                         clearInterval(intervalId);
                         document.getElementById(`status-badge-${articleId}`).innerText = "ارسال شده به وردپرس";
-                        btn.innerText = "✅ تکمیل شد";
+                        
+                        // ⚡ آپدیت آنی و زنده باکس دکمه به نشان سبز ارسال شده
+                        const actionWrap = document.getElementById(`action-wrapper-${articleId}`);
+                        if (actionWrap) {
+                            actionWrap.innerHTML = `
+                                <span class="text-[10px] text-zinc-400 font-medium">اکنون</span>
+                                <div class="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 text-[10px] font-bold select-none">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    ارسال شده به وردپرس
+                                </div>
+                            `;
+                        }
+                        
                         setTimeout(() => { document.getElementById(`progress-container-${articleId}`).classList.add('hidden'); }, 3000);
                     } else if (data.step === 'failed') {
                         clearInterval(intervalId);

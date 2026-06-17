@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-import base64  # اضافه شدن کتابخانه رمزگشایی بایت‌های بیس۶۴
+import base64
 from bs4 import BeautifulSoup
 from celery import shared_task
 from .models import Site, KeywordResearch, GeneratedArticle, AIConfig
@@ -12,7 +12,7 @@ from .llm_service import LLMService
 # ==========================================
 def upload_image_to_wordpress(site, image_source, title="seo-media-asset"):
     """
-    دانلود یا رمزگشایی تصویر و آپلود مستقیم آن به بخش رسانه‌های وردپرس جهت دریافت لینک بومی و دائم دامنه
+    دانلود یا رمزگشایی تصویر و آپلود مستقیم آن به بخش رسانه‌های وردپرس جهت دریافت لینک و شناسه بومی
     """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -22,19 +22,16 @@ def upload_image_to_wordpress(site, image_source, title="seo-media-asset"):
     
     try:
         if "base64," in image_source:
-            # جداسازی هدر بیس۶۴ و استخراج بایت‌های خام عکس
             b64_data = image_source.split("base64,")[1]
             img_bytes = base64.b64decode(b64_data)
             headers["Content-Type"] = "image/webp"
         else:
-            # اگر خروجی لینک خارجی بود آن را دانلود و بایت‌هایش را آماده می‌کنیم
             res = requests.get(image_source, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
             if res.status_code == 200:
                 img_bytes = res.content
                 headers["Content-Type"] = res.headers.get("Content-Type", "image/jpeg")
 
         if img_bytes:
-            # شلیک فایل باینری عکس به دروازه ساخت رسانه در وردپرس
             wp_res = requests.post(
                 f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/media",
                 auth=(site.wp_username, site.wp_app_password),
@@ -43,13 +40,17 @@ def upload_image_to_wordpress(site, image_source, title="seo-media-asset"):
                 timeout=35
             )
             if wp_res.status_code in [200, 201]:
-                # دریافت لینک رسمی و دائمی ایجاد شده روی هاست وردپرس سایت مقصد
-                return wp_res.json().get('source_url')
+                res_json = wp_res.json()
+                # 💡 تغییر بزرگ: هم لینک عکس (source_url) و هم شناسه عددی آن (id) را برای تصویر شاخص برگشت می‌دهد
+                return res_json.get('source_url'), res_json.get('id')
+            else:
+                print(f"WP Media API rejected upload: {wp_res.status_code} - {wp_res.text}")
     except Exception as e:
-        print(f"خطا در آپلود سایدلود رسانه به وردپرس: {str(e)}")
+        print(f"Error calling WP Media API: {str(e)}")
         
-    # اگر آپلود فیل شد لینک اولیه را برمی‌گرداند تا فرآیند متوقف نشود
-    return image_source if "http" in image_source else "https://placehold.co/1024x1024.png?text=Media+Upload+Fallback"
+    if "base64," in image_source:
+        return "https://placehold.co/1024x1024.png?text=WordPress+Media+Upload+Failed", None
+    return image_source, None
 
 
 # ==========================================
@@ -58,8 +59,10 @@ def upload_image_to_wordpress(site, image_source, title="seo-media-asset"):
 def generate_ai_image(site_id, prompt_text):
     """ تابع تصویرساز ارتقایافته که از کانفیگ کاملاً مجزای 'article_image' استفاده می‌کند """
     config = AIConfig.objects.filter(site_id=site_id, feature_type='article_image').first()
-    if not config or not config.api_key:
-        return "https://placehold.co/1024x1024.png?text=API+Key+Missing"
+    if not config:
+        raise Exception("تنظیمات تولید تصویر (article_image) برای این سایت یافت نشد. لطفا در مدیریت سایت ها، تب تصویرساز را تکمیل و ذخیره کنید.")
+    if not config.api_key:
+        raise Exception("کلید API تصویرساز (article_image) در تنظیمات سایت شما ثبت نشده است.")
     
     if config.provider == 'gapgpt':
         url = "https://api.gapgpt.app/v1/images/generations"
@@ -69,9 +72,14 @@ def generate_ai_image(site_id, prompt_text):
             res = requests.post(url, headers=headers, json=payload, timeout=90)
             if res.status_code == 200:
                 data = res.json().get('data', [{}])[0]
-                return data.get('url') or f"data:image/webp;base64,{data.get('b64_json')}"
+                val = data.get('url') or (f"data:image/webp;base64,{data.get('b64_json')}" if data.get('b64_json') else None)
+                if val:
+                    return val
+                raise Exception("پاسخ دریافتی از GapGPT فاقد فیلد تصویر بود.")
+            else:
+                raise Exception(f"پاسخ خطای سرور GapGPT (کد {res.status_code}): {res.text}")
         except Exception as e:
-            print(f"Error drawing image: {str(e)}")
+            raise Exception(f"خطا در ارتباط با تصویرساز گپ‌جی‌پتی: {str(e)}")
             
     elif config.provider == 'openai':
         url = "https://api.openai.com/v1/images/generations"
@@ -80,11 +88,16 @@ def generate_ai_image(site_id, prompt_text):
         try:
             res = requests.post(url, headers=headers, json=payload, timeout=90)
             if res.status_code == 200:
-                return res.json().get('data', [{}])[0].get('url')
+                val = res.json().get('data', [{}])[0].get('url')
+                if val:
+                    return val
+                raise Exception("پاسخ دریافتی از OpenAI فاقد آدرس تصویر بود.")
+            else:
+                raise Exception(f"پاسخ خطای سرور OpenAI (کد {res.status_code}): {res.text}")
         except Exception as e:
-            print(f"Error OpenAI Image: {str(e)}")
+            raise Exception(f"خطا در ارتباط با تصویرساز دال‌ای: {str(e)}")
             
-    return "https://placehold.co/1024x1024.png?text=Image+Generation+Failed"
+    raise Exception(f"پرووایدر تصویرساز نامعتبر است: {config.provider}")
 
 
 # ==========================================
@@ -105,7 +118,9 @@ def run_article_generation_task(article_id):
         article.save()
         
         formatted_links = "لیست مقالات موجود برای لینک‌دهی داخلی:\n"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
         
         wp_res = requests.get(
             f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts?per_page=30&status=publish",
@@ -146,7 +161,7 @@ def run_article_generation_task(article_id):
             f"قوانین مهم: کلمات کلیدی را به صورت انکرتکست طبیعی با این لیست لینک‌سازی کنید:\n{formatted_links}\n{image_instruction}"
         )
         
-        user_message = f"مقاله حرفه‌ای برای موضوع «{article.title}» خلق کنید."
+        user_message = f"لطفاً یک مقاله شاهکار، جامع و سئو شده برای موضوع عمیق «{article.title}» خلق کنید."
         
         ai_response = LLMService.send_request(
             site_id=site.id, feature_type='article_text', system_message=system_message, user_message=user_message
@@ -161,7 +176,7 @@ def run_article_generation_task(article_id):
         data = json.loads(clean_json)
     except Exception as e:
         article.current_step = 'failed'
-        article.error_log = f"مرحله ۲ (نگارش متن با هوش مصنوعی شکست خورد): خروجی ساختار JSON نبود. تنظیمات توکن را بررسی کنید. جزئیات: {str(e)}"
+        article.error_log = f"مرحله ۲ (نگارش متن با هوش مصنوعی شکست خورد): {str(e)}"
         article.save()
         return
 
@@ -170,21 +185,23 @@ def run_article_generation_task(article_id):
         article.current_step = 'images'
         article.save()
         
-        img_prompt = f"A professional high-fidelity modern illustration for an article titled: {data.get('title')}, corporate minimal clean background."
+        # 📸 مهندسی پرامپت جدید: تاکید بر واقع‌گرایی شدید و ممنوعیت مطلق متن و نوشته
+        img_prompt = (
+            f"A realistic, photorealistic high-fidelity professional photograph completely relevant to the topic: '{data.get('title')}', "
+            f"clean commercial product/tech composition, dramatic cinematic studio lighting, highly detailed 8k, "
+            f"strictly NO text, NO words, NO typography, NO letters, NO writing."
+        )
         raw_featured_image = generate_ai_image(site.id, img_prompt)
         
-        if "Image+Generation+Failed" in raw_featured_image or "API+Key" in raw_featured_image:
-            raise Exception("پاسخ نامعتبر یا خطای توکن کلید API اختصاصی بخش تصاویر سایت.")
-            
         # تبدیل مستقیم عکس بیس۶۴ شاخص به یک لینک تمیز وردپرسی هماهنگ با سرور مقصد
-        featured_image = upload_image_to_wordpress(site, raw_featured_image, f"featured-{data.get('slug', 'asset')}")
+        featured_image, featured_image_id = upload_image_to_wordpress(site, raw_featured_image, f"featured-{data.get('slug', 'asset')}")
     except Exception as e:
         article.current_step = 'failed'
-        article.error_log = f"مرحله ۳ (تصویرسازی شکست خورد): کلید API یا پرووایدر بخش 'تولید تصویر مقاله' پاسخگو نیست. جزئیات: {str(e)}"
+        article.error_log = f"مرحله ۳ (تصویرسازی شکست خورد): {str(e)}"
         article.save()
         return
 
-    # 📦 مرحله ۴: مونتاژ نهایی المان‌های سبک‌شده و ارسال مستقیم پیش‌نویس به وردپرس
+    # 📦 مرحله ۴: مونتاژ نهایی و ارسال مستقیم پیش‌نویس به وردپرس
     try:
         article.current_step = 'assembly'
         article.save()
@@ -192,11 +209,15 @@ def run_article_generation_task(article_id):
         final_content = data.get('content', '')
         if article.image_count > 0 and "" in final_content:
             for i in range(article.image_count):
-                mid_prompt = f"A clean minimal vector icon element matching the context of: {data.get('title')} part {i+1}."
+                # 📸 اعمال پرامپت واقع‌گرایانه و بدون متن برای تصاویر بین متنی
+                mid_prompt = (
+                    f"A high-resolution authentic real-world photograph asset closely matching the context of article part {i+1}: '{data.get('title')}', "
+                    f"professional lighting, sharp focus, strictly NO text, NO typography, NO words, NO labels."
+                )
                 raw_mid_url = generate_ai_image(site.id, mid_prompt)
                 
                 # تبدیل و آپلود تک‌تک تصاویر مابین متن به رسانه نیتیو وردپرس
-                wp_mid_url = upload_image_to_wordpress(site, raw_mid_url, f"mid-{i+1}-{data.get('slug', 'asset')}")
+                wp_mid_url, _ = upload_image_to_wordpress(site, raw_mid_url, f"mid-{i+1}-{data.get('slug', 'asset')}")
                 
                 img_tag = f'<img src="{wp_mid_url}" alt="{data.get("title")}" style="width:100%; max-width:750px; display:block; margin:25px auto; border-radius:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);" />'
                 final_content = final_content.replace("", img_tag, 1)
@@ -208,19 +229,18 @@ def run_article_generation_task(article_id):
         article.content = final_content
         article.featured_image_url = featured_image
 
-        # تزریق شکیل تصویر شاخص به ابتدای محتوای متن مقاله برای هماهنگی با ۱۰۰٪ قالب‌های وردپرس
-        if article.featured_image_url:
-            featured_tag = f'<img src="{article.featured_image_url}" alt="{article.title}" style="width:100%; max-width:850px; display:block; margin:0 auto 30px auto; border-radius:12px;" />'
-            final_content = featured_tag + final_content
-
-        # شلیک پیش‌نویس نهایی سبک‌شده و سئو شده به هسته دیتابیس وردپرس
-        wp_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        # ارسال پیش‌نویس نهایی به همراه پیوست کردن رسمی شناسه تصویر شاخص (featured_media)
+        wp_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         wp_payload = {
             "title": article.title,
             "content": final_content,
             "slug": article.slug,
             "status": "draft"
         }
+        
+        # 🎯 شلیک نهایی تصویر شاخص به فیلد اصلی وردپرس
+        if featured_image_id:
+            wp_payload["featured_media"] = featured_image_id
         
         wp_post_res = requests.post(
             f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
@@ -232,15 +252,15 @@ def run_article_generation_task(article_id):
         
         if wp_post_res.status_code in [200, 201]:
             article.wp_post_id = wp_post_res.json().get('id')
-            article.status = 'sent_to_wp'
+            article.status = 'sent_to_wp'  # به روزرسانی وضعیت به ارسال شده به وردپرس
         else:
-            raise Exception(f"وردپرس مقاله را نپذیرفت. کد خطا: {wp_post_res.status_code} - پاسخ: {wp_post_res.text[:150]}")
+            raise Exception(f"وردپرس مقاله را نپذیرفت. کد خطا: {wp_post_res.status_code} - متن پاسخ: {wp_post_res.text}")
 
         if article.keyword_ref:
             article.keyword_ref.status = 'generated'
             article.keyword_ref.save()
 
-        # 🎉 پایان موفقیت‌آمیز کل زنجیره اتوماسیون
+        # 🎉 پایان موفقیت‌آمیز کل زنجیره
         article.current_step = 'success'
         article.save()
     except Exception as e:
