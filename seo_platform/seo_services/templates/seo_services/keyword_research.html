@@ -1,231 +1,344 @@
 {% extends 'seo_services/base.html' %}
+{% block title %}کلمات کلیدی | Quantum SEO{% endblock %}
+{% block page_title %}بانک کلمات کلیدی{% endblock %}
+{% block page_subtitle %}مدیریت خوشه‌های محتوایی و استراتژی سئو{% endblock %}
+
+{% block topbar_actions %}
+<div style="display:flex;gap:8px;align-items:center;">
+    <div style="font-size:11px;color:var(--text-muted);">سایت:</div>
+    <select onchange="location.href='?site_id='+this.value" class="form-input form-select" style="width:160px;padding:6px 32px 6px 12px;">
+        {% for site in sites %}
+        <option value="{{ site.id }}" {% if site.id == selected_site_id %}selected{% endif %}>{{ site.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endblock %}
+
 {% block content %}
-<header class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+<style>
+.kw-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+@media(max-width:1100px){ .kw-layout { grid-template-columns: 1fr; } }
+
+.sidebar-panel { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+@media(max-width:1100px){ .sidebar-panel { position: static; } }
+
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; }
+
+.sort-link { color: var(--text-muted); text-decoration: none; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 3px; transition: color 0.15s; }
+.sort-link:hover { color: var(--accent); }
+.sort-link.active { color: var(--accent); }
+
+.kw-row { transition: background 0.1s; }
+.kw-row:hover { background: #FAFBFF; }
+
+.action-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; font-size: 12px;
+    color: var(--text-muted);
+}
+.action-btn:hover.approve { background:#ECFDF5; border-color:#A7F3D0; color:#059669; }
+.action-btn:hover.edit { background:#EEF2FF; border-color:#C7D2FE; color:var(--accent); }
+.action-btn:hover.delete { background:#FEF2F2; border-color:#FECACA; color:#DC2626; }
+
+.progress-card {
+    border: 1px solid #C7D2FE;
+    background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: none;
+    animation: slideDown 0.3s ease;
+}
+
+.step-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
+.step-icon { font-size:14px; width:22px; text-align:center; flex-shrink:0; }
+
+.pagination { display:flex; align-items:center; gap:6px; justify-content:center; padding:16px; }
+.page-btn {
+    width:32px; height:32px; border-radius:8px;
+    border: 1px solid var(--border); background: var(--surface);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:600; color:var(--text-secondary);
+    text-decoration:none; transition:all 0.15s;
+}
+.page-btn:hover { background: var(--accent-light); border-color:#C7D2FE; color:var(--accent); }
+.page-btn.active { background:var(--accent); border-color:var(--accent); color:white; }
+</style>
+
+<!-- Progress tracker (hidden by default) -->
+<div class="progress-card" id="kw-progress-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="font-size:12px; font-weight:700; color:#3730A3; display:flex; align-items:center; gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#4F46E5;animation:pulse-dot 1.5s infinite;flex-shrink:0;"></div>
+            <span id="kw-step-label">در حال پردازش...</span>
+        </div>
+        <span style="font-size:11px; font-weight:700; color:#4F46E5; font-variant-numeric:tabular-nums;" id="kw-pct-label">0%</span>
+    </div>
+    <div class="progress-track">
+        <div class="progress-fill" id="kw-progress-bar" style="width:0%;"></div>
+    </div>
+    <div id="kw-error-box" style="margin-top:10px; padding:10px 12px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; font-size:11px; color:#991B1B; display:none;"></div>
+</div>
+
+<div class="kw-layout">
+    <!-- Left panel: AI + Manual -->
+    <div class="sidebar-panel">
+
+        <!-- AI Research -->
+        <div class="card">
+            <div style="padding:16px 18px; border-bottom:1px solid var(--border);">
+                <div style="font-size:12px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:16px;">🤖</span> استخراج هوشمند خوشه
+                </div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:3px;">تحلیل رقبا + هوش مصنوعی</div>
+            </div>
+            <div style="padding:16px 18px;">
+                <form id="ai-research-form" onsubmit="startAiResearch(event)">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="run_ai_research">
+                    <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+
+                    <div style="margin-bottom:12px;">
+                        <label class="form-label">کلمات کلیدی اصلی</label>
+                        <input type="text" name="core_keywords" required placeholder="مثال: طراحی سایت، سئو" class="form-input">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                        <div>
+                            <label class="form-label">تعداد موضوع</label>
+                            <input type="number" name="topic_count" value="20" min="5" max="100" class="form-input" style="text-align:center;">
+                        </div>
+                        <div>
+                            <label class="form-label">فیلتر Intent</label>
+                            <select name="intent_filter" class="form-input form-select">
+                                <option value="All">همه</option>
+                                <option value="Informational">Informational</option>
+                                <option value="Commercial">Commercial</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:12px;">
+                        <label class="form-label">توضیح بیزینس</label>
+                        <textarea name="business_desc" rows="2" placeholder="شرح مختصر کسب و کار..." class="form-input" style="resize:vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
+                        <label class="form-label">آدرس رقبا</label>
+                        <textarea name="competitors" rows="2" placeholder="با کاما جدا کنید..." class="form-input" style="resize:vertical;"></textarea>
+                    </div>
+
+                    <button type="submit" id="btn-research-submit" class="btn btn-primary w-full">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        شروع تحقیق
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manual add -->
+        <div class="card">
+            <div style="padding:14px 18px; border-bottom:1px solid var(--border);">
+                <div style="font-size:12px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:16px;">🎯</span> افزودن دستی موضوع
+                </div>
+            </div>
+            <div style="padding:14px 18px;">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_manual_topic">
+                    <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+                    <div style="margin-bottom:10px;">
+                        <label class="form-label">عنوان مقاله</label>
+                        <input type="text" name="article_title" required placeholder="عنوان سئو شده" class="form-input">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label class="form-label">دسته مادر (Pillar)</label>
+                        <input type="text" name="category_pillar" placeholder="دسته‌بندی" class="form-input">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="form-label">Intent</label>
+                        <select name="intent" class="form-input form-select">
+                            <option value="Informational">Informational</option>
+                            <option value="Commercial">Commercial</option>
+                            <option value="Transactional">Transactional</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-secondary w-full">➕ ثبت در بانک</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Table -->
     <div>
-        <h2 class="text-xl font-bold tracking-tight text-zinc-900">بانک موضوعات و استراتژی محتوای سایت‌ها</h2>
-        <p class="text-zinc-400 text-xs mt-1 font-medium">مشاهده جداول کلمات کلیدی، تایید یا ویرایش موضوعات خوشه‌ای و افزودن عناوین سئو شده دستی</p>
-    </div>
-    <div class="flex items-center gap-2">
-        <label class="text-xs font-bold text-zinc-500 whitespace-nowrap">جدول سایت:</label>
-        <select onchange="location.href='?site_id=' + this.value" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs font-bold focus:outline-none shadow-sm">
-            {% for site in sites %}
-                <option value="{{ site.id }}" {% if site.id == selected_site_id %}selected{% endif %}>{{ site.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-</header>
+        <!-- Filters -->
+        <div class="filter-bar">
+            <form method="GET" style="display:flex; gap:8px; flex-wrap:wrap; width:100%; align-items:center;">
+                <input type="hidden" name="site_id" value="{{ selected_site_id }}">
+                <input type="hidden" name="sort" value="{{ sort_by }}">
 
-<div id="kw-progress-card" class="bg-zinc-950 text-white rounded-2xl p-5 mb-8 shadow-md hidden">
-    <div class="flex justify-between items-center mb-2">
-        <p class="text-xs font-bold flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-            <span id="kw-step-label">در حال راه‌اندازی فرآیند تحقیق...</span>
-        </p>
-        <span class="text-[11px] text-zinc-400 font-mono" id="kw-pct-label">0%</span>
-    </div>
-    <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-        <div id="kw-progress-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%;"></div>
-    </div>
-    <div id="kw-error-box" class="mt-3 p-2.5 bg-red-950 border border-red-900/50 rounded-xl text-[11px] text-red-300 font-medium hidden"></div>
-</div>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="جستجو در عناوین..." class="form-input" style="flex:1;min-width:140px;">
 
-<div class="bg-white rounded-2xl border border-zinc-100 p-4 shadow-sm mb-6 max-w-5xl">
-    <form method="GET" class="grid grid-cols-1 sm:grid-cols-5 gap-3 items-center">
-        <input type="hidden" name="site_id" value="{{ selected_site_id }}">
-        <input type="hidden" name="sort" value="{{ sort_by }}">
-        
-        <div class="sm:col-span-2">
-            <input type="text" name="search" value="{{ search_query }}" placeholder="جستجو در عناوین و دسته‌بندی‌ها..." class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-        </div>
-        <div>
-            <select name="intent" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
-                <option value="All" {% if intent_filter == 'All' %}selected{% endif %}>همه Intentها</option>
-                <option value="Informational" {% if intent_filter == 'Informational' %}selected{% endif %}>Informational</option>
-                <option value="Commercial" {% if intent_filter == 'Commercial' %}selected{% endif %}>Commercial</option>
-                <option value="Transactional" {% if intent_filter == 'Transactional' %}selected{% endif %}>Transactional</option>
-            </select>
-        </div>
-        <div>
-            <select name="status" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
-                <option value="All" {% if status_filter == 'All' %}selected{% endif %}>همه وضعیت‌ها</option>
-                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>در انتظار تایید</option>
-                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>تایید شده</option>
-                <option value="generated" {% if status_filter == 'generated' %}selected{% endif %}>مقاله تولید شده</option>
-            </select>
-        </div>
-        <div class="flex gap-2">
-            <select name="per_page" class="w-1/2 px-2 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none">
-                <option value="10" {% if per_page == 10 %}selected{% endif %}>۱۰ تایی</option>
-                <option value="20" {% if per_page == 20 %}selected{% endif %}>۲۰ تایی</option>
-                <option value="50" {% if per_page == 50 %}selected{% endif %}>۵۰ تایی</option>
-            </select>
-            <button type="submit" class="w-1/2 py-1.5 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">فیلتر ⚡</button>
-        </div>
-    </form>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
-    <div class="bg-white rounded-2xl border border-zinc-100 p-5 shadow-sm space-y-4">
-        <h4 class="text-xs font-bold text-zinc-800 flex items-center gap-2"><span>🤖</span> استخراج هوشمند خوشه محتوایی</h4>
-        <form id="ai-research-form" onsubmit="startAiResearch(event)" class="space-y-3">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="run_ai_research">
-            <input type="hidden" name="site_id" value="{{ selected_site_id }}">
-            <input type="text" name="core_keywords" required placeholder="کلمات کلیدی اصلی (با کاما)" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-[9px] font-bold text-zinc-400 mb-1">تعداد موضوعات:</label>
-                    <input type="number" name="topic_count" value="20" min="5" max="100" class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold text-center focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-zinc-400 mb-1">فیلتر Intent پایه:</label>
-                    <select name="intent_filter" class="w-full px-2 py-1.5 bg-zinc-50 border border-zinc-100 rounded-xl text-[11px] font-bold focus:outline-none">
-                        <option value="All">شامل همه</option>
-                        <option value="Informational">Informational</option>
-                        <option value="Commercial">Commercial</option>
-                    </select>
-                </div>
-            </div>
-            <textarea name="business_desc" rows="2" placeholder="توضیحات کوتاه بیزینس..." class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium"></textarea>
-            <textarea name="competitors" rows="2" placeholder="لینک رقبا (با کاما)..." class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium"></textarea>
-            <button type="submit" id="btn-research-submit" class="w-full py-2.5 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">شروع تحقیق هوش مصنوعی</button>
-        </form>
-    </div>
-
-    <div class="bg-white rounded-2xl border border-zinc-100 p-5 shadow-sm space-y-4 lg:col-span-2">
-        <h4 class="text-xs font-bold text-zinc-800 flex items-center gap-2"><span>🎯</span> افزودن دستی موضوع سئو شده</h4>
-        <form method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="add_manual_topic">
-            <input type="hidden" name="site_id" value="{{ selected_site_id }}">
-            <div class="sm:col-span-2">
-                <input type="text" name="article_title" required placeholder="عنوان مقاله سئو شده و اصولی" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-            <div>
-                <input type="text" name="category_pillar" placeholder="دسته مادر (Pillar)" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            </div>
-            <div class="sm:col-span-2">
-                <select name="intent" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
-                    <option value="Informational">اطلاعاتی (Informational)</option>
-                    <option value="Commercial">تجاری (Commercial)</option>
-                    <option value="Transactional">معاملاتی (Transactional)</option>
+                <select name="intent" class="form-input form-select" style="width:140px;">
+                    <option value="All" {% if intent_filter == 'All' %}selected{% endif %}>همه Intent</option>
+                    <option value="Informational" {% if intent_filter == 'Informational' %}selected{% endif %}>Informational</option>
+                    <option value="Commercial" {% if intent_filter == 'Commercial' %}selected{% endif %}>Commercial</option>
+                    <option value="Transactional" {% if intent_filter == 'Transactional' %}selected{% endif %}>Transactional</option>
                 </select>
+
+                <select name="status" class="form-input form-select" style="width:140px;">
+                    <option value="All" {% if status_filter == 'All' %}selected{% endif %}>همه وضعیت</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>در انتظار تایید</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>تایید شده</option>
+                    <option value="generated" {% if status_filter == 'generated' %}selected{% endif %}>تولید شده</option>
+                </select>
+
+                <select name="per_page" class="form-input form-select" style="width:90px;">
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>۱۰ تا</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>۲۰ تا</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>۵۰ تا</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">اعمال</button>
+            </form>
+        </div>
+
+        <!-- Table -->
+        <div class="card overflow-hidden">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:280px;">
+                                <a class="sort-link {% if sort_by == 'article_title' or sort_by == '-article_title' %}active{% endif %}"
+                                   href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'article_title' %}-article_title{% else %}article_title{% endif %}">
+                                    عنوان موضوع
+                                    {% if sort_by == 'article_title' %}↑{% elif sort_by == '-article_title' %}↓{% else %}↕{% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a class="sort-link {% if 'category_pillar' in sort_by %}active{% endif %}"
+                                   href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'category_pillar' %}-category_pillar{% else %}category_pillar{% endif %}">
+                                    دسته Pillar
+                                    {% if sort_by == 'category_pillar' %}↑{% elif sort_by == '-category_pillar' %}↓{% else %}↕{% endif %}
+                                </a>
+                            </th>
+                            <th>Intent</th>
+                            <th style="text-align:center;">وضعیت</th>
+                            <th style="text-align:center;">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kw in keywords %}
+                        <tr class="kw-row" id="kw-row-{{ kw.id }}">
+                            <td>
+                                <div style="font-weight:600; color:var(--text-primary); font-size:12px; margin-bottom:2px; max-width:320px;" id="td-title-{{ kw.id }}">{{ kw.article_title }}</div>
+                            </td>
+                            <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="td-pillar-{{ kw.id }}">{{ kw.category_pillar }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if kw.intent == 'Informational' %}badge-purple
+                                    {% elif kw.intent == 'Commercial' %}badge-green
+                                    {% elif kw.intent == 'Transactional' %}badge-amber
+                                    {% else %}badge-gray{% endif %}"
+                                    id="td-intent-{{ kw.id }}" data-val="{{ kw.intent }}">
+                                    {{ kw.intent }}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge {% if kw.status == 'approved' %}badge-green{% elif kw.status == 'generated' %}badge-blue{% elif kw.status == 'deleted' %}badge-red{% else %}badge-amber{% endif %}" id="badge-{{ kw.id }}">
+                                    {{ kw.get_status_display }}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                {% if kw.status != 'generated' %}
+                                <div style="display:flex; gap:4px; justify-content:center;">
+                                    <button onclick="updateKwStatus('{{ kw.id }}', 'approved')" class="action-btn approve" title="تایید">✓</button>
+                                    <button onclick="openEditModal('{{ kw.id }}')" class="action-btn edit" title="ویرایش">✎</button>
+                                    <button onclick="updateKwStatus('{{ kw.id }}', 'deleted')" class="action-btn delete" title="حذف">✕</button>
+                                </div>
+                                {% else %}
+                                <span style="font-size:10px; color:var(--text-muted);">🔒 استفاده شد</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <h3>بانک کلمات کلیدی خالی است</h3>
+                                <p>با استفاده از پنل سمت راست، اولین تحقیق را شروع کنید</p>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <button type="submit" class="py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">➕ ثبت در بانک سئو سایت</button>
-        </form>
-    </div>
-</div>
 
-<div class="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto"><table class="w-full text-right text-xs">
-        <thead class="bg-zinc-50/80 text-zinc-500 font-bold border-b border-zinc-100 select-none">
-            <tr>
-                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
-                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'article_title' %}-article_title{% else %}article_title{% endif %}">
-                        عنوان موضوع سئو شده خوشه‌ای {% if sort_by == 'article_title' %}▲{% elif sort_by == '-article_title' %}▼{% endif %}
-                    </a>
-                </th>
-                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
-                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'category_pillar' %}-category_pillar{% else %}category_pillar{% endif %}">
-                        دسته‌بندی مادر (Pillar Page) {% if sort_by == 'category_pillar' %}▲{% elif sort_by == '-category_pillar' %}▼{% endif %}
-                    </a>
-                </th>
-                <th class="p-4 cursor-pointer hover:text-zinc-950 transition">
-                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'intent' %}-intent{% else %}intent{% endif %}">
-                        Search Intent {% if sort_by == 'intent' %}▲{% elif sort_by == '-intent' %}▼{% endif %}
-                    </a>
-                </th>
-                <th class="p-4 text-center cursor-pointer hover:text-zinc-950 transition">
-                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={% if sort_by == 'status' %}-status{% else %}status{% endif %}">
-                        وضعیت ردیف {% if sort_by == 'status' %}▲{% elif sort_by == '-status' %}▼{% endif %}
-                    </a>
-                </th>
-                <th class="p-4 text-center">عملیات تایید و ویرایش</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-zinc-50 font-medium text-zinc-700">
-            {% for kw in keywords %}
-            <tr class="hover:bg-zinc-50/50 transition" id="kw-row-{{ kw.id }}">
-                <td class="p-4 font-bold text-zinc-900" id="td-title-{{ kw.id }}">{{ kw.article_title }}</td>
-                <td class="p-4 text-zinc-500" id="td-pillar-{{ kw.id }}">{{ kw.category_pillar }}</td>
-                <td class="p-4"><span id="td-intent-{{ kw.id }}" data-val="{{ kw.intent }}" class="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded text-[10px] font-bold">{{ kw.get_intent_display }}</span></td>
-                <td class="p-4 text-center">
-                    <span id="badge-{{ kw.id }}" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
-                        {% if kw.status == 'approved' %} bg-emerald-50 text-emerald-700 border border-emerald-100
-                        {% elif kw.status == 'generated' %} bg-indigo-50 text-indigo-700 border border-indigo-100
-                        {% else %} bg-amber-50 text-amber-700 border border-amber-100 {% endif %}">
-                        {{ kw.get_status_display }}
-                    </span>
-                </td>
-                <td class="p-4 text-center flex items-center justify-center gap-1.5">
-                    {% if kw.status != 'generated' %}
-                        <button onclick="updateKwStatus('{{ kw.id }}', 'approved')" class="bg-zinc-900 text-white px-2 py-1 rounded-md text-[10px] hover:bg-zinc-800 transition">✓ تایید</button>
-                        <button onclick="openEditModal('{{ kw.id }}')" class="bg-zinc-100 text-zinc-700 px-2 py-1 rounded-md text-[10px] hover:bg-zinc-200 transition">✍️ ویرایش</button>
-                        <button onclick="updateKwStatus('{{ kw.id }}', 'deleted')" class="bg-zinc-100 text-zinc-400 px-2 py-1 rounded-md text-[10px] hover:bg-red-50 hover:text-red-600 transition">✕ حذف</button>
-                    {% else %}
-                        <span class="text-zinc-400 text-[10px]">استفاده شده 🔒</span>
+            {% if keywords.has_other_pages %}
+            <div style="border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:12px 16px; font-size:11px; color:var(--text-muted);">
+                <span>صفحه {{ keywords.number }} از {{ keywords.paginator.num_pages }}</span>
+                <div class="pagination" style="padding:0;">
+                    {% if keywords.has_previous %}
+                    <a class="page-btn" href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.previous_page_number }}">←</a>
                     {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="p-8 text-center text-zinc-400">بانک کلمات کلیدی این پروژه خالی است.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table></div>
-
-    {% if keywords.has_other_pages %}
-    <div class="px-6 py-4 border-t border-zinc-50 flex items-center justify-between bg-zinc-50/20 text-xs text-zinc-500 font-bold">
-        <div>صفحه {{ keywords.number }} از {{ keywords.paginator.num_pages }}</div>
-        <div class="flex items-center gap-1">
-            {% if keywords.has_previous %}
-                <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.previous_page_number }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">← قبلی</a>
-            {% endif %}
-            
-            {% for num in keywords.paginator.page_range %}
-                {% if keywords.number == num %}
-                    <span class="px-3 py-1.5 bg-zinc-950 text-white rounded-xl shadow-sm">{{ num }}</span>
-                {% elif num > keywords.number|add:-3 and num < keywords.number|add:3 %}
-                    <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ num }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">{{ num }}</a>
-                {% endif %}
-            {% endfor %}
-
-            {% if keywords.has_next %}
-                <a href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.next_page_number }}" class="px-3 py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl transition">بعدی →</a>
+                    {% for num in keywords.paginator.page_range %}
+                        {% if keywords.number == num %}
+                            <span class="page-btn active">{{ num }}</span>
+                        {% elif num > keywords.number|add:-3 and num < keywords.number|add:3 %}
+                            <a class="page-btn" href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ num }}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if keywords.has_next %}
+                    <a class="page-btn" href="?site_id={{ selected_site_id }}&search={{ search_query }}&intent={{ intent_filter }}&status={{ status_filter }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ keywords.next_page_number }}">→</a>
+                    {% endif %}
+                </div>
+            </div>
             {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
 
-<div id="edit-topic-modal" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-xl shadow-2xl p-6 text-right">
-        <h3 class="font-bold text-sm text-zinc-900 mb-5 flex items-center gap-1.5"><span>✍️</span> ویرایش و اصلاح تخصصی عنوان</h3>
+<!-- Edit modal -->
+<div id="edit-topic-modal" class="modal-backdrop" onclick="if(event.target===this)closeModal('edit-topic-modal')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div style="font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                <span>✍️</span> ویرایش موضوع
+            </div>
+            <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('edit-topic-modal')">✕</button>
+        </div>
         <form method="POST">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_keyword_row">
             <input type="hidden" name="kw_id" id="modal-kw-id">
-            <div class="space-y-4">
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
                 <div>
-                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">عنوان نهایی مقاله</label>
-                    <input type="text" name="article_title" id="modal-title" required class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none focus:bg-white">
+                    <label class="form-label">عنوان نهایی مقاله</label>
+                    <input type="text" name="article_title" id="modal-title" required class="form-input">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">دسته‌بندی مادر (Pillar Page)</label>
-                    <input type="text" name="category_pillar" id="modal-pillar" required class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
+                    <label class="form-label">دسته‌بندی مادر (Pillar)</label>
+                    <input type="text" name="category_pillar" id="modal-pillar" class="form-input">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-zinc-500 mb-1.5">Search Intent</label>
-                    <select name="intent" id="modal-intent" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none">
-                        <option value="Informational">اطلاعاتی (Informational)</option>
-                        <option value="Commercial">تجاری (Commercial)</option>
-                        <option value="Transactional">معاملاتی (Transactional)</option>
-                        <option value="Navigational">ناوبری (Navigational)</option>
+                    <label class="form-label">Search Intent</label>
+                    <select name="intent" id="modal-intent" class="form-input form-select">
+                        <option value="Informational">Informational</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Transactional">Transactional</option>
+                        <option value="Navigational">Navigational</option>
                     </select>
                 </div>
             </div>
-            <div class="flex justify-end gap-3 pt-5 mt-5 border-t">
-                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-bold">لغو</button>
-                <button type="submit" class="px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-bold shadow-sm">💾 ذخیره و اصلاح عنوان</button>
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('edit-topic-modal')" class="btn btn-secondary">انصراف</button>
+                <button type="submit" class="btn btn-primary">💾 ذخیره تغییرات</button>
             </div>
         </form>
     </div>
@@ -238,32 +351,35 @@ function startAiResearch(event) {
     const formData = new FormData(form);
     const btn = document.getElementById('btn-research-submit');
     btn.disabled = true;
-    btn.innerText = "⏳ ارسال به صف پردازش...";
-    document.getElementById('kw-progress-card').classList.remove('hidden');
-    document.getElementById('kw-error-box').classList.add('hidden');
-    
+    btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⟳</span> در صف پردازش...';
+
+    const card = document.getElementById('kw-progress-card');
+    card.style.display = 'block';
+    document.getElementById('kw-error-box').style.display = 'none';
+    document.getElementById('kw-progress-bar').classList.remove('danger');
+
     fetch("", { method: "POST", body: formData })
     .then(res => res.json())
     .then(data => {
-        if(data.status === 'queued') {
+        if (data.status === 'queued') {
             const intervalId = setInterval(() => {
                 fetch(`/api/keyword-status/{{ selected_site_id }}/`)
                 .then(r => r.json())
-                .then(statusData => {
-                    document.getElementById('kw-progress-bar').style.width = `${statusData.percentage}%`;
-                    document.getElementById('kw-step-label').innerText = statusData.step_display;
-                    document.getElementById('kw-pct-label').innerText = `${statusData.percentage}%`;
-                    if(statusData.step === 'success') {
+                .then(s => {
+                    document.getElementById('kw-progress-bar').style.width = s.percentage + '%';
+                    document.getElementById('kw-step-label').innerText = s.step_display;
+                    document.getElementById('kw-pct-label').innerText = s.percentage + '%';
+                    if (s.step === 'success') {
                         clearInterval(intervalId);
                         location.reload();
-                    } else if(statusData.step === 'failed') {
+                    } else if (s.step === 'failed') {
                         clearInterval(intervalId);
                         btn.disabled = false;
-                        btn.innerText = "شروع تحقیق هوش مصنوعی";
+                        btn.innerHTML = '⟳ تلاش مجدد';
+                        document.getElementById('kw-progress-bar').classList.add('danger');
                         const errBox = document.getElementById('kw-error-box');
-                        errBox.innerText = statusData.error_log;
-                        errBox.classList.remove('hidden');
-                        document.getElementById('kw-progress-bar').className = "bg-red-500 h-1.5 rounded-full";
+                        errBox.innerText = s.error_log;
+                        errBox.style.display = 'block';
                     }
                 });
             }, 3000);
@@ -277,22 +393,33 @@ function updateKwStatus(kwId, newStatus) {
         headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": "{{ csrf_token }}" },
         body: `action=change_status&kw_id=${kwId}&status=${newStatus}`
     }).then(res => {
-        if(res.ok && newStatus === 'deleted') document.getElementById(`kw-row-${kwId}`).remove();
-        else if(res.ok) {
-            const badge = document.getElementById(`badge-${kwId}`);
-            badge.innerText = "تایید شده";
-            badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100";
+        if (res.ok) {
+            if (newStatus === 'deleted') {
+                const row = document.getElementById(`kw-row-${kwId}`);
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(10px)';
+                row.style.transition = 'all 0.3s ease';
+                setTimeout(() => row.remove(), 300);
+            } else {
+                const badge = document.getElementById(`badge-${kwId}`);
+                badge.innerText = 'تایید شده';
+                badge.className = 'badge badge-green';
+            }
         }
     });
 }
 
 function openEditModal(kwId) {
     document.getElementById('modal-kw-id').value = kwId;
-    document.getElementById('modal-title').value = document.getElementById(`td-title-${kwId}`).innerText;
-    document.getElementById('modal-pillar').value = document.getElementById(`td-pillar-${kwId}`).innerText;
+    document.getElementById('modal-title').value = document.getElementById(`td-title-${kwId}`).innerText.trim();
+    document.getElementById('modal-pillar').value = document.getElementById(`td-pillar-${kwId}`).innerText.trim();
     document.getElementById('modal-intent').value = document.getElementById(`td-intent-${kwId}`).getAttribute('data-val');
-    document.getElementById('edit-topic-modal').classList.remove('hidden');
+    openModal('edit-topic-modal');
 }
-function closeEditModal() { document.getElementById('edit-topic-modal').classList.add('hidden'); }
+
+// Spin keyframe
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
 </script>
 {% endblock %}

@@ -1,201 +1,493 @@
 {% extends 'seo_services/base.html' %}
+{% block title %}مدیریت سایت‌ها | Quantum SEO{% endblock %}
+{% block page_title %}مدیریت پروژه‌ها{% endblock %}
+{% block page_subtitle %}پیکربندی اتصال وردپرس، هوش مصنوعی و اتوماسیون{% endblock %}
+
+{% block topbar_actions %}
+<button onclick="openSiteModal('add-site-modal')" class="btn btn-primary btn-sm">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+    پروژه جدید
+</button>
+{% endblock %}
+
 {% block content %}
-<header class="mb-10 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-    <div>
-        <h2 class="text-xl font-bold tracking-tight text-zinc-900">مدیریت متمرکز پروژه‌ها</h2>
-        <p class="text-zinc-400 text-xs mt-1 font-medium">پیکربندی اطلاعات اتصال وردپرس، تفکیک مستقل کلیدهای هوش مصنوعی و اتوماسیون انتشار هر دامنه</p>
-    </div>
-    <!-- دکمه مینی‌مال باز کردن پاپ‌آپ ثبت سایت جدید -->
-    <button onclick="openModal('add-site-modal')" class="px-4 py-2 bg-zinc-950 text-white hover:bg-zinc-800 rounded-xl text-xs font-bold transition shadow-sm">
-        ➕ افزودن پروژه جدید
-    </button>
-</header>
+<style>
+.sites-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+@media(max-width:1100px){ .sites-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:640px){ .sites-grid { grid-template-columns:1fr; } }
 
-<!-- شبکه‌ کارت‌های مینی‌مال وب‌سایت‌ها (مناسب برای بیش از ۵۰ سایت بدون شلوغی) -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+.site-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: inherit;
+}
+.site-card:hover {
+    border-color: #C7D2FE;
+    background: #FAFBFF;
+    box-shadow: 0 6px 20px rgba(79,70,229,0.1);
+    transform: translateY(-2px);
+}
+.site-favicon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+    border: 1px solid #C7D2FE;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+}
+.site-info { flex: 1; min-width: 0; }
+.site-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.site-domain { font-size: 10px; color: var(--text-muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site-status { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.status-dot { width:8px; height:8px; border-radius:50%; background:var(--success); box-shadow:0 0 0 3px rgba(16,185,129,0.15); }
+
+/* ── Custom overlay / modal ── */
+.s-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.22s ease;
+    pointer-events: none;
+}
+.s-overlay.open { opacity: 1; pointer-events: all; }
+
+.s-modal {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(15,23,42,0.22);
+    width: 100%; max-width: 880px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+}
+.s-overlay.open .s-modal { transform: scale(1) translateY(0); }
+.s-modal-sm { max-width: 540px; }
+
+.s-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: #fff; z-index: 2;
+    border-radius: 20px 20px 0 0;
+}
+.s-body { padding: 20px 24px; }
+.s-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 10px;
+    position: sticky; bottom: 0; background: #fff; z-index: 2;
+    border-radius: 0 0 20px 20px;
+}
+
+/* Tabs */
+.s-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 20px; gap:2px; }
+.s-tab {
+    padding: 10px 16px; font-size:12px; font-weight:600;
+    color: var(--text-muted); border:none; background:none;
+    cursor:pointer; border-bottom:2px solid transparent;
+    margin-bottom:-1px; transition:all 0.15s;
+    font-family:inherit; display:flex; align-items:center; gap:6px;
+}
+.s-tab:hover { color:var(--text-primary); }
+.s-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+.s-tab-panel { display:none; }
+.s-tab-panel.active { display:block; animation:fadeIn 0.18s ease; }
+
+/* Config helpers */
+.cfg-section {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding:16px; margin-bottom:14px;
+}
+.cfg-title { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:.8px; text-transform:uppercase; margin-bottom:12px; }
+
+.cfg-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cfg-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media(max-width:600px){ .cfg-grid2,.cfg-grid3 { grid-template-columns:1fr; } }
+
+.slider-wrap { display:flex; flex-direction:column; gap:6px; }
+.slider-top { display:flex; justify-content:space-between; align-items:center; }
+.slider-val {
+    font-size:11px; font-weight:700; color:var(--accent);
+    background:var(--accent-light); padding:2px 8px;
+    border-radius:6px; min-width:36px; text-align:center;
+}
+
+/* Toggle */
+.toggle-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px; background:var(--surface);
+    border:1px solid var(--border); border-radius:10px; margin-bottom:12px;
+}
+.toggle-switch { position:relative; width:40px; height:22px; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-track {
+    position:absolute; inset:0; background:#CBD5E1;
+    border-radius:99px; cursor:pointer; transition:.2s;
+}
+.toggle-track::before {
+    content:''; position:absolute;
+    width:16px; height:16px; border-radius:50%;
+    background:white; top:3px; right:3px;
+    transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
+.toggle-switch input:checked + .toggle-track { background:var(--accent); }
+.toggle-switch input:checked + .toggle-track::before { transform:translateX(-18px); }
+
+.hint-box {
+    padding:10px 14px; background:#FFF7ED;
+    border:1px solid #FED7AA; border-radius:10px;
+    font-size:11px; color:#92400E; line-height:1.6; margin-top:8px;
+}
+</style>
+
+<!-- Sites grid -->
+<div class="sites-grid stagger-children">
     {% for site in sites %}
-    <div onclick="openModal('edit-modal-{{ site.id }}')" class="bg-white rounded-2xl border border-zinc-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 flex items-center justify-between hover:border-zinc-300 hover:shadow-md cursor-pointer transition duration-200">
-        <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-sm">🌐</div>
-            <div>
-                <h4 class="font-bold text-xs text-zinc-900">{{ site.name }}</h4>
-                <p class="text-zinc-400 text-[10px] font-mono mt-0.5">{{ site.domain }}</p>
-            </div>
+    <div class="site-card" onclick="openSiteModal('edit-modal-{{ site.id }}')">
+        <div class="site-favicon">🌐</div>
+        <div class="site-info">
+            <div class="site-name">{{ site.name }}</div>
+            <div class="site-domain">{{ site.domain }}</div>
         </div>
-        <div class="text-left">
-            <span class="w-1.5 h-1.5 inline-block rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-            <span class="text-[9px] font-bold text-zinc-400 block mt-1">تنظیمات ⚙️</span>
-        </div>
-    </div>
-
-    <!-- 💎 پاپ‌آپ اختصاصی پیشرفته مدیریت و تنظیمات همین سایت -->
-    <div id="edit-modal-{{ site.id }}" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 animate-fade-in">
-        <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-zinc-100/50 text-right" onclick="event.stopPropagation()">
-            
-            <div class="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-3xl">
-                <div class="flex items-center gap-3">
-                    <span class="text-lg">⚙️</span>
-                    <h3 class="font-bold text-sm text-zinc-900">پیکربندی هسته مرکزی پروژه: {{ site.name }}</h3>
-                </div>
-                <button onclick="closeModal('edit-modal-{{ site.id }}')" class="text-zinc-400 hover:text-zinc-900 font-bold text-sm">✕</button>
-            </div>
-
-            <!-- تب‌های ناوبری داخلی پاپ‌آپ اختصاصی -->
-            <div class="flex border-b border-zinc-100 bg-zinc-50/20 px-6 text-xs font-bold text-zinc-500">
-                <button type="button" onclick="switchTab('{{ site.id }}', 'conn')" id="tab-btn-{{ site.id }}-conn" class="px-4 py-3 border-b-2 border-zinc-900 text-zinc-950">🔐 مشخصات اتصال</button>
-                <button type="button" onclick="switchTab('{{ site.id }}', 'kw')" id="tab-btn-{{ site.id }}-kw" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">🔍 تحقیق کلمات</button>
-                <button type="button" onclick="switchTab('{{ site.id }}', 'txt')" id="tab-btn-{{ site.id }}-txt" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">✍️ نگارش متن</button>
-                <button type="button" onclick="switchTab('{{ site.id }}', 'img')" id="tab-btn-{{ site.id }}-img" class="px-4 py-3 border-b-2 border-transparent hover:text-zinc-900">🖼️ تصویرساز و اتوماسیون</button>
-            </div>
-
-            <form method="POST" class="p-6 space-y-6">
-                {% csrf_token %}
-                <input type="hidden" name="site_id" value="{{ site.id }}">
-
-                <!-- 📁 تب اول: ویرایش اطلاعات اصلی اتصال وردپرس -->
-                <div id="tab-content-{{ site.id }}-conn" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">نام برند پروژه</label>
-                            <input type="text" name="name" value="{{ site.name }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">آدرس دامنه اصلی</label>
-                            <input type="url" name="domain" value="{{ site.domain }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">WordPress REST API URL</label>
-                            <input type="url" name="wp_url" value="{{ site.wp_url }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">نام کاربری ادمین وردپرس</label>
-                            <input type="text" name="wp_username" value="{{ site.wp_username }}" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium focus:outline-none focus:bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-zinc-500 mb-1.5">رمز عبور اپلیکیشن (برای تغییر وارد کنید)</label>
-                            <input type="password" name="wp_app_password" value="••••••••••••••••" placeholder="رمز عبور ۲۴ رقمی جدید" class="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold focus:outline-none focus:bg-white">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 📁 تب دوم: تنظیمات هوش مصنوعی تحقیق کلمات -->
-                <div id="tab-content-{{ site.id }}-kw" class="space-y-4 hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <select name="ai_provider_keyword" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                            <option value="gapgpt" {% if site.cfg_kw.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
-                            <option value="openai" {% if site.cfg_kw.provider == 'openai' %}selected{% endif %}>OpenAI Direct</option>
-                            <option value="gemini" {% if site.cfg_kw.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
-                        </select>
-                        <input type="text" name="ai_model_keyword" value="{{ site.cfg_kw.model_name|default:'gpt-5-mini' }}" placeholder="نام دقیق مدل" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                    </div>
-                    <!-- اسلایدرهای داینامیک لوکس -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                        <div>
-                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>میزان خلاقیت (Temperature)</span><span class="text-zinc-900 font-bold" id="lbl-temp-kw-{{ site.id }}">{{ site.cfg_kw.temperature|default:0.7 }}</span></div>
-                            <input type="range" name="ai_temp_keyword" min="0" max="1" step="0.1" value="{{ site.cfg_kw.temperature|default:0.7 }}" oninput="document.getElementById('lbl-temp-kw-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>حداکثر طول توکن (Max Tokens)</span><span class="text-zinc-900 font-bold" id="lbl-token-kw-{{ site.id }}">{{ site.cfg_kw.max_tokens|default:4000 }}</span></div>
-                            <input type="range" name="ai_tokens_keyword" min="1000" max="16000" step="500" value="{{ site.cfg_kw.max_tokens|default:4000 }}" oninput="document.getElementById('lbl-token-kw-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
-                        </div>
-                    </div>
-                    <input type="password" name="ai_key_keyword" value="{{ site.cfg_kw.api_key|default:'' }}" placeholder="کلید API اختصاصی فاز تحقیق کلمات" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
-                </div>
-
-                <!-- 📁 تب سوم: تنظیمات هوش مصنوعی نگارش متن مقاله -->
-                <div id="tab-content-{{ site.id }}-txt" class="space-y-4 hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <select name="ai_provider_article_text" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                            <option value="gapgpt" {% if site.cfg_text.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
-                            <option value="openai" {% if site.cfg_text.provider == 'openai' %}selected{% endif %}>OpenAI Direct</option>
-                            <option value="gemini" {% if site.cfg_text.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
-                        </select>
-                        <input type="text" name="ai_model_article_text" value="{{ site.cfg_text.model_name|default:'gpt-5-mini' }}" placeholder="نام دقیق مدل" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                        <div>
-                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>میزان خلاقیت متن</span><span class="text-zinc-900 font-bold" id="lbl-temp-txt-{{ site.id }}">{{ site.cfg_text.temperature|default:0.7 }}</span></div>
-                            <input type="range" name="ai_temp_article_text" min="0" max="1" step="0.1" value="{{ site.cfg_text.temperature|default:0.7 }}" oninput="document.getElementById('lbl-temp-txt-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[11px] font-bold text-zinc-500 mb-2"><span>حداکثر توکن متن</span><span class="text-zinc-900 font-bold" id="lbl-token-txt-{{ site.id }}">{{ site.cfg_text.max_tokens|default:4000 }}</span></div>
-                            <input type="range" name="ai_tokens_article_text" min="1000" max="16000" step="500" value="{{ site.cfg_text.max_tokens|default:4000 }}" oninput="document.getElementById('lbl-token-txt-{{ site.id }}').innerText = this.value" class="w-full h-1 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-zinc-900">
-                        </div>
-                    </div>
-                    <input type="password" name="ai_key_article_text" value="{{ site.cfg_text.api_key|default:'' }}" placeholder="کلید API اختصاصی نگارش متن" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
-                </div>
-
-                <!-- 📁 تب چهارم: تنظیمات تصویرساز و زمان‌بندی اتوماسیون -->
-                <div id="tab-content-{{ site.id }}-img" class="space-y-4 hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-100/60">
-                        <div class="flex items-center gap-2"><input type="checkbox" name="is_automation_active" {% if site.is_automation_active %}checked{% endif %} class="rounded text-zinc-900"><span class="text-xs text-zinc-700 font-bold">اتوماسیون فعال</span></div>
-                        <input type="number" name="automation_interval_days" value="{{ site.automation_interval_days }}" placeholder="فاصله انتشار (روز)" class="p-2 border rounded bg-white text-xs font-bold text-center">
-                        <select name="content_type" class="p-2 border rounded bg-white text-xs font-medium">
-                            <option value="educational" {% if site.content_type == 'educational' %}selected{% endif %}>آموزشی</option>
-                            <option value="commercial" {% if site.content_type == 'commercial' %}selected{% endif %}>تجاری و محصول</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        <select name="ai_provider_article_image" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                            <option value="gapgpt" {% if site.cfg_img.provider == 'gapgpt' %}selected{% endif %}>GapGPT API (Imagen 4)</option>
-                            <option value="openai" {% if site.cfg_img.provider == 'openai' %}selected{% endif %}>OpenAI (DallE 3)</option>
-                        </select>
-                        <input type="text" name="ai_model_article_image" value="{{ site.cfg_img.model_name|default:'imagen-4.0-ultra-generate-001' }}" placeholder="مدل تصویرساز" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-medium">
-                    </div>
-                    <input type="password" name="ai_key_article_image" value="{{ site.cfg_img.api_key|default:'' }}" placeholder="کلید API اختصاصی بخش تصویرساز" class="w-full p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs font-bold">
-                </div>
-
-                <div class="flex justify-end gap-3 border-t border-zinc-100 pt-4">
-                    <button type="button" onclick="closeModal('edit-modal-{{ site.id }}')" class="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition">انصراف</button>
-                    <button type="submit" class="px-5 py-2 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition shadow-sm">ذخیره نهایی کل تغییرات پروژه</button>
-                </div>
-            </form>
+        <div class="site-status">
+            <div class="status-dot"></div>
+            <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
         </div>
     </div>
     {% empty %}
-    <div class="col-span-full bg-white p-10 rounded-2xl border border-zinc-100 text-center text-zinc-400 text-xs font-medium">پروژه‌ای یافت نشد. دکمه افزودن پروژه جدید را بزنید.</div>
+    <div style="grid-column:1/-1;">
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">🌐</div>
+                <h3>هنوز پروژه‌ای ثبت نشده</h3>
+                <p>برای شروع، اولین وب‌سایت خود را اضافه کنید</p>
+                <button onclick="openSiteModal('add-site-modal')" class="btn btn-primary" style="margin-top:16px;">➕ افزودن پروژه</button>
+            </div>
+        </div>
+    </div>
     {% endfor %}
 </div>
 
-<!-- ➕ پاپ‌آپ مجزا و شکیل ثبت سایت جدید -->
-<div id="add-site-modal" class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="closeModal('add-site-modal')">
-    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-6 text-right" onclick="event.stopPropagation()">
-        <h3 class="font-bold text-sm text-zinc-900 mb-6 flex items-center gap-2"><span>🌐</span> اتصال وب‌سایت جدید به پلتفرم تجاری</h3>
-        <form method="POST" class="space-y-4">
-            {% csrf_token %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input type="text" name="name" required placeholder="نام پروژه (مثال: سبحان رایانه)" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-                <input type="url" name="domain" required placeholder="دامنه اصلی (https://id724.com)" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
+<!-- ════════════════════════════════════════
+     Edit modals (one per site)
+════════════════════════════════════════ -->
+{% for site in sites %}
+<div id="edit-modal-{{ site.id }}" class="s-overlay" onclick="handleOverlayClick(event,'edit-modal-{{ site.id }}')">
+  <div class="s-modal" onclick="event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="s-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#EEF2FF,#F5F3FF);border:1px solid #C7D2FE;display:flex;align-items:center;justify-content:center;font-size:16px;">🌐</div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text-primary);">{{ site.name }}</div>
+                <div style="font-size:10px;color:var(--text-muted);font-family:monospace;">{{ site.domain }}</div>
             </div>
-            <input type="url" name="wp_url" required placeholder="آدرس API وردپرس (https://id724.com)" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input type="text" name="wp_username" required placeholder="نام کاربری ادمین وردپرس" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-medium">
-                <input type="password" name="wp_app_password" required placeholder="رمز عبور ۲۴ رقمی اپلیکیشن وردپرس" class="px-4 py-2.5 bg-zinc-50 border border-zinc-100 rounded-xl text-xs focus:outline-none focus:bg-white font-bold">
-            </div>
-            <div class="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onclick="closeModal('add-site-modal')" class="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-xl text-xs font-bold">لغو</button>
-                <button type="submit" class="px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-bold">🚀 احراز هویت و اتصال سایت</button>
-            </div>
-        </form>
+        </div>
+        <button type="button" onclick="closeSiteModal('edit-modal-{{ site.id }}')" class="btn btn-ghost btn-icon btn-sm">✕</button>
     </div>
+
+    <!-- Tabs -->
+    <div class="s-tabs">
+        <button type="button" class="s-tab active" onclick="switchSiteTab('{{ site.id }}','conn',this)">🔐 اتصال</button>
+        <button type="button" class="s-tab" onclick="switchSiteTab('{{ site.id }}','kw',this)">🔍 کلمات</button>
+        <button type="button" class="s-tab" onclick="switchSiteTab('{{ site.id }}','txt',this)">✍️ متن</button>
+        <button type="button" class="s-tab" onclick="switchSiteTab('{{ site.id }}','img',this)">🖼️ تصویر</button>
+    </div>
+
+    <!-- Form wraps body + footer together -->
+    <form method="POST" action="{% url 'sites_management' %}">
+        {% csrf_token %}
+        <input type="hidden" name="site_id" value="{{ site.id }}">
+
+        <div class="s-body">
+
+            <!-- ── Tab: Connection ── -->
+            <div id="stab-{{ site.id }}-conn" class="s-tab-panel active">
+                <div class="cfg-section">
+                    <div class="cfg-title">مشخصات پروژه</div>
+                    <div class="cfg-grid3">
+                        <div>
+                            <label class="form-label">نام برند</label>
+                            <input type="text" name="name" value="{{ site.name }}" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="form-label">دامنه اصلی</label>
+                            <input type="url" name="domain" value="{{ site.domain }}" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="form-label">WordPress API URL</label>
+                            <input type="url" name="wp_url" value="{{ site.wp_url }}" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="cfg-section">
+                    <div class="cfg-title">اعتبارنامه وردپرس</div>
+                    <div class="cfg-grid2">
+                        <div>
+                            <label class="form-label">نام کاربری ادمین</label>
+                            <input type="text" name="wp_username" value="{{ site.wp_username }}" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">رمز اپلیکیشن (Application Password)</label>
+                            <input type="password" name="wp_app_password" placeholder="برای تغییر وارد کنید" class="form-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Keyword AI ── -->
+            <div id="stab-{{ site.id }}-kw" class="s-tab-panel">
+                <div class="cfg-section">
+                    <div class="cfg-title">هوش مصنوعی — تحقیق کلمات کلیدی</div>
+                    <div class="cfg-grid2" style="margin-bottom:14px;">
+                        <div>
+                            <label class="form-label">پرووایدر</label>
+                            <select name="ai_provider_keyword" class="form-input form-select">
+                                <option value="gapgpt" {% if site.cfg_kw.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
+                                <option value="openai" {% if site.cfg_kw.provider == 'openai' %}selected{% endif %}>OpenAI</option>
+                                <option value="gemini" {% if site.cfg_kw.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">نام مدل</label>
+                            <input type="text" name="ai_model_keyword" value="{{ site.cfg_kw.model_name|default:'gpt-5-mini' }}" class="form-input">
+                        </div>
+                    </div>
+                    <div class="cfg-grid2" style="margin-bottom:14px;">
+                        <div class="slider-wrap">
+                            <div class="slider-top">
+                                <label class="form-label" style="margin:0;">خلاقیت (Temperature)</label>
+                                <span class="slider-val" id="lbl-temp-kw-{{ site.id }}">{{ site.cfg_kw.temperature|default:0.7 }}</span>
+                            </div>
+                            <input type="range" name="ai_temp_keyword" min="0" max="1" step="0.1"
+                                   value="{{ site.cfg_kw.temperature|default:0.7 }}"
+                                   oninput="document.getElementById('lbl-temp-kw-{{ site.id }}').innerText=this.value">
+                        </div>
+                        <div class="slider-wrap">
+                            <div class="slider-top">
+                                <label class="form-label" style="margin:0;">حداکثر توکن</label>
+                                <span class="slider-val" id="lbl-token-kw-{{ site.id }}">{{ site.cfg_kw.max_tokens|default:4000 }}</span>
+                            </div>
+                            <input type="range" name="ai_tokens_keyword" min="1000" max="16000" step="500"
+                                   value="{{ site.cfg_kw.max_tokens|default:4000 }}"
+                                   oninput="document.getElementById('lbl-token-kw-{{ site.id }}').innerText=this.value">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">کلید API</label>
+                        <input type="password" name="ai_key_keyword" value="{{ site.cfg_kw.api_key|default:'' }}" placeholder="sk-…" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Text AI ── -->
+            <div id="stab-{{ site.id }}-txt" class="s-tab-panel">
+                <div class="cfg-section">
+                    <div class="cfg-title">هوش مصنوعی — نگارش متن مقاله</div>
+                    <div class="cfg-grid2" style="margin-bottom:14px;">
+                        <div>
+                            <label class="form-label">پرووایدر</label>
+                            <select name="ai_provider_article_text" class="form-input form-select">
+                                <option value="gapgpt" {% if site.cfg_text.provider == 'gapgpt' %}selected{% endif %}>GapGPT API</option>
+                                <option value="openai" {% if site.cfg_text.provider == 'openai' %}selected{% endif %}>OpenAI</option>
+                                <option value="gemini" {% if site.cfg_text.provider == 'gemini' %}selected{% endif %}>Google Gemini</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">نام مدل</label>
+                            <input type="text" name="ai_model_article_text" value="{{ site.cfg_text.model_name|default:'gpt-5-mini' }}" class="form-input">
+                        </div>
+                    </div>
+                    <div class="cfg-grid2" style="margin-bottom:14px;">
+                        <div class="slider-wrap">
+                            <div class="slider-top">
+                                <label class="form-label" style="margin:0;">خلاقیت متن</label>
+                                <span class="slider-val" id="lbl-temp-txt-{{ site.id }}">{{ site.cfg_text.temperature|default:0.7 }}</span>
+                            </div>
+                            <input type="range" name="ai_temp_article_text" min="0" max="1" step="0.1"
+                                   value="{{ site.cfg_text.temperature|default:0.7 }}"
+                                   oninput="document.getElementById('lbl-temp-txt-{{ site.id }}').innerText=this.value">
+                        </div>
+                        <div class="slider-wrap">
+                            <div class="slider-top">
+                                <label class="form-label" style="margin:0;">حداکثر توکن</label>
+                                <span class="slider-val" id="lbl-token-txt-{{ site.id }}">{{ site.cfg_text.max_tokens|default:4000 }}</span>
+                            </div>
+                            <input type="range" name="ai_tokens_article_text" min="1000" max="16000" step="500"
+                                   value="{{ site.cfg_text.max_tokens|default:4000 }}"
+                                   oninput="document.getElementById('lbl-token-txt-{{ site.id }}').innerText=this.value">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">کلید API</label>
+                        <input type="password" name="ai_key_article_text" value="{{ site.cfg_text.api_key|default:'' }}" placeholder="sk-…" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Image + Automation ── -->
+            <div id="stab-{{ site.id }}-img" class="s-tab-panel">
+                <div class="cfg-section">
+                    <div class="cfg-title">اتوماسیون انتشار</div>
+                    <div class="toggle-row">
+                        <div>
+                            <div style="font-size:12px;font-weight:600;color:var(--text-primary);">اتوماسیون زمان‌بندی</div>
+                            <div style="font-size:10px;color:var(--text-muted);">تولید و انتشار خودکار بر اساس فاصله زمانی</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="is_automation_active" {% if site.is_automation_active %}checked{% endif %}>
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
+                    <div class="cfg-grid2">
+                        <div>
+                            <label class="form-label">فاصله انتشار (روز)</label>
+                            <input type="number" name="automation_interval_days" value="{{ site.automation_interval_days }}" class="form-input" style="text-align:center;">
+                        </div>
+                        <div>
+                            <label class="form-label">نوع محتوا</label>
+                            <select name="content_type" class="form-input form-select">
+                                <option value="educational" {% if site.content_type == 'educational' %}selected{% endif %}>آموزشی</option>
+                                <option value="commercial" {% if site.content_type == 'commercial' %}selected{% endif %}>تجاری</option>
+                                <option value="news" {% if site.content_type == 'news' %}selected{% endif %}>خبری</option>
+                                <option value="corporate" {% if site.content_type == 'corporate' %}selected{% endif %}>شرکتی</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <div class="cfg-title">هوش مصنوعی — تصویرساز</div>
+                    <div class="cfg-grid2" style="margin-bottom:12px;">
+                        <div>
+                            <label class="form-label">پرووایدر تصویر</label>
+                            <select name="ai_provider_article_image" class="form-input form-select">
+                                <option value="gapgpt" {% if site.cfg_img.provider == 'gapgpt' %}selected{% endif %}>GapGPT (Imagen 4)</option>
+                                <option value="openai" {% if site.cfg_img.provider == 'openai' %}selected{% endif %}>OpenAI (DallE 3)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">مدل تصویرساز</label>
+                            <input type="text" name="ai_model_article_image" value="{{ site.cfg_img.model_name|default:'imagen-4.0-ultra-generate-001' }}" class="form-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">کلید API تصویرساز</label>
+                        <input type="password" name="ai_key_article_image" value="{{ site.cfg_img.api_key|default:'' }}" placeholder="کلید اختصاصی تصویر" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.s-body -->
+
+        <!-- Footer is INSIDE the form -->
+        <div class="s-footer">
+            <button type="button" onclick="closeSiteModal('edit-modal-{{ site.id }}')" class="btn btn-secondary">انصراف</button>
+            <button type="submit" class="btn btn-primary">💾 ذخیره تغییرات</button>
+        </div>
+
+    </form>
+  </div><!-- /.s-modal -->
+</div><!-- /.s-overlay -->
+{% endfor %}
+
+<!-- ════════════════════════════════════════
+     Add new site modal
+════════════════════════════════════════ -->
+<div id="add-site-modal" class="s-overlay" onclick="handleOverlayClick(event,'add-site-modal')">
+  <div class="s-modal s-modal-sm" onclick="event.stopPropagation()">
+    <div class="s-header">
+        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">🌐</span> اتصال وب‌سایت جدید
+        </div>
+        <button type="button" onclick="closeSiteModal('add-site-modal')" class="btn btn-ghost btn-icon btn-sm">✕</button>
+    </div>
+
+    <form method="POST" action="{% url 'sites_management' %}">
+        {% csrf_token %}
+        <div class="s-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="cfg-grid2">
+                <div>
+                    <label class="form-label">نام پروژه</label>
+                    <input type="text" name="name" required placeholder="مثال: سبحان رایانه" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">دامنه اصلی</label>
+                    <input type="url" name="domain" required placeholder="https://example.com" class="form-input">
+                </div>
+            </div>
+            <div>
+                <label class="form-label">WordPress REST API URL</label>
+                <input type="url" name="wp_url" required placeholder="https://example.com" class="form-input">
+            </div>
+            <div class="cfg-grid2">
+                <div>
+                    <label class="form-label">نام کاربری ادمین</label>
+                    <input type="text" name="wp_username" required placeholder="admin" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">رمز اپلیکیشن</label>
+                    <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" class="form-input">
+                </div>
+            </div>
+            <div class="hint-box">
+                💡 رمز اپلیکیشن را از مسیر <strong>وردپرس ← پروفایل ← رمز عبور اپلیکیشن</strong> دریافت کنید.
+            </div>
+        </div>
+        <div class="s-footer">
+            <button type="button" onclick="closeSiteModal('add-site-modal')" class="btn btn-secondary">انصراف</button>
+            <button type="submit" class="btn btn-primary">🚀 اتصال سایت</button>
+        </div>
+    </form>
+  </div>
 </div>
 
-<!-- جاوااسکریپت بومی و بهینه پاپ‌آپ‌ها و سوییچرهای تب‌های داخلی -->
 <script>
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openSiteModal(id) {
+    const el = document.getElementById(id);
+    el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
 
-function switchTab(siteId, tabName) {
-    const tabs = ['conn', 'kw', 'txt', 'img'];
+function closeSiteModal(id) {
+    const el = document.getElementById(id);
+    el.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function handleOverlayClick(event, id) {
+    if (event.target === event.currentTarget) closeSiteModal(id);
+}
+
+function switchSiteTab(siteId, tabName, btn) {
+    const tabs = ['conn','kw','txt','img'];
     tabs.forEach(t => {
-        document.getElementById(`tab-content-${siteId}-${t}`).classList.add('hidden');
-        document.getElementById(`tab-btn-${siteId}-${t}`).classList.remove('border-zinc-900', 'text-zinc-950');
-        document.getElementById(`tab-btn-${siteId}-${t}`).classList.add('border-transparent');
+        const panel = document.getElementById(`stab-${siteId}-${t}`);
+        if (panel) panel.classList.remove('active');
     });
-    document.getElementById(`tab-content-${siteId}-${tabName}`).classList.remove('hidden');
-    document.getElementById(`tab-btn-${siteId}-${tabName}`).classList.add('border-zinc-900', 'text-zinc-950');
+    btn.closest('.s-tabs').querySelectorAll('.s-tab').forEach(b => b.classList.remove('active'));
+
+    const target = document.getElementById(`stab-${siteId}-${tabName}`);
+    if (target) target.classList.add('active');
+    btn.classList.add('active');
 }
 </script>
 {% endblock %}
